@@ -1,0 +1,13 @@
+Name:          skema
+Version:       0.1.0
+Cabal-Version: >=1.8
+Description:   skema prototype
+License:       GPL
+License-file:  LICENSE
+Author:        Luis Cabellos
+Maintainer:    cabellos@ifca.unican.es
+Build-Type:    Simple
+
+Executable test01
+  Main-is:       test01.lhs
+  Build-Depends: base>= 4, cairo>=0.10, gtk>=0.10
