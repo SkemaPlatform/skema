@@ -1,33 +1,50 @@
 \begin{code}
+import Control.Monad.Trans( liftIO )
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Gdk.Events
+import Graphics.UI.Gtk.Gdk.EventM
+import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
+import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
+import Paths_skema( getDataFileName )
 \end{code}
 
 \begin{code}
 main :: IO ()
 main= do
-     initGUI
-     window <- windowNew
-     set window [windowTitle := "Hello Cairo",
-                 windowDefaultWidth := 300, windowDefaultHeight := 200,
-                 containerBorderWidth := 10 ]
+  initGUI
+  glade <- getDataFileName "skema.glade"
+  Just xml <- xmlNew glade
+  window <- xmlGetWidget xml castToWindow "main"
+  onDestroy window mainQuit
+ 
+  canvas <- xmlGetWidget xml castToDrawingArea "canvas"
+  
+  widgetModifyBg canvas StateNormal (Color 65535 65535 65535)
 
-     frame <- frameNew
-     containerAdd window frame
-     canvas <- drawingAreaNew
-     containerAdd frame canvas
-     widgetModifyBg canvas StateNormal (Color 65535 65535 65535)
+  widgetShowAll window 
 
-     widgetShowAll window 
-     onExpose canvas (\x -> do 
-                        (w,h) <- widgetGetSize canvas
-                        drawin <- widgetGetDrawWindow canvas
-                        renderWithDrawable drawin (myDraw (fromIntegral w) (fromIntegral h))
-                        return (eventSent x))
-    
-     onDestroy window mainQuit
-     mainGUI
+  canvas `on` exposeEvent $ tryEvent exposeCanvas
+
+  canvas `on` buttonPressEvent $ tryEvent $ do
+        liftIO $ putStrLn "key press event"
+
+  onDestroy window mainQuit
+  mainGUI
+\end{code}
+
+\begin{code}
+exposeCanvas = do
+  canvas <- eventWindow
+  liftIO $ drawCanvas canvas
+\end{code}
+
+\begin{code}
+drawCanvas :: DrawWindow -> IO ()
+drawCanvas canvas = do
+  let drawable = castToDrawable canvas
+  (w,h) <- drawableGetSize drawable
+  renderWithDrawable canvas (myDraw (fromIntegral w) (fromIntegral h))
+  return ()
 \end{code}
 
 \begin{code}

@@ -7,7 +7,22 @@ License-file:  LICENSE
 Author:        Luis Cabellos
 Maintainer:    cabellos@ifca.unican.es
 Build-Type:    Simple
+Data-Dir:      data
+Data-Files:    *.glade
+
+Library
+  hs-source-dirs:  src
+  Build-Depends:   base>=4
+  Exposed-modules: 
+    Skema.Block.Function
 
 Executable test01
-  Main-is:       test01.lhs
-  Build-Depends: base>= 4, cairo>=0.10, gtk>=0.10
+  hs-source-dirs:  src
+  Main-is:         test01.lhs
+  Build-Depends:   base>=4, cairo>=0.10, gtk>=0.10, glade>=0.10
+
+Executable skema
+  hs-source-dirs:  src
+  Main-is:         skema_main.lhs
+  Build-Depends:   base>=4, cairo>=0.10, gtk>=0.10, glade>=0.10,
+                   mtl>=1.1
