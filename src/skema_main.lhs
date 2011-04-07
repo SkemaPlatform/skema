@@ -1,20 +1,24 @@
 \begin{code}
 import Control.Monad.Trans( liftIO )
+import Control.Concurrent.MVar( MVar, newMVar, takeMVar, putMVar )
 import Graphics.UI.Gtk
     ( on, mainQuit, initGUI, mainGUI, onDestroy, onExpose
     , castToWindow, widgetShowAll, widgetGetSize
     , widgetGetDrawWindow, renderWithDrawable
     , widgetModifyBg, StateType(..), Color(..)
     , eventWindow, castToDrawable, drawableGetSize
-    , DrawWindow(..) )
+    , DrawWindow, DrawingArea )
 import Graphics.UI.Gtk.Abstract.Widget
-    ( exposeEvent, buttonPressEvent )
+    ( exposeEvent, buttonPressEvent, widgetQueueDraw )
 import Graphics.UI.Gtk.Gdk.EventM
     ( tryEvent )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
+import Skema( SkemaState(..), XS(..), io, runXS, get, put )
+import Skema.SkemaDoc( SkemaDoc(..), VisualNode(..), Position(..) )
+import Skema.Util( deg2rad )
 \end{code}
 
 \begin{code}
@@ -32,76 +36,116 @@ main= do
 
   widgetShowAll window 
 
-  canvas `on` exposeEvent $ tryEvent exposeCanvas
+  let st = SkemaState 
+           { doc = SkemaDoc [] }
+
+  state <- newMVar st
+
+  canvas `on` exposeEvent $ tryEvent $ do
+        canvas <- eventWindow
+        sks <- liftIO $ takeMVar state
+        (_,new_sks) <- liftIO $ runXS sks $ drawCanvas canvas
+        liftIO $ putMVar state new_sks
 
   canvas `on` buttonPressEvent $ tryEvent $ do
-        liftIO $ putStrLn "key press event"
+        sks <- liftIO $ takeMVar state
+        (_,new_sks) <- liftIO $ runXS sks $ testButton canvas
+        liftIO $ putMVar state new_sks
 
   onDestroy window mainQuit
   mainGUI
 \end{code}
 
 \begin{code}
-exposeCanvas = do
-  canvas <- eventWindow
-  liftIO $ drawCanvas canvas
+testButton :: DrawingArea -> XS ()
+testButton canvas = do
+  state <- get
+  let old_doc = doc state
+      old_nodes = nodes old_doc
+      new_node = VisualNode $ Position (20 + 50*(fromIntegral$length old_nodes)) (20 + 20*(fromIntegral$length old_nodes))
+  put $ state {
+               doc = old_doc { 
+                       nodes = old_nodes ++ [new_node]}}
+  io $ widgetQueueDraw canvas
 \end{code}
 
 \begin{code}
-drawCanvas :: DrawWindow -> IO ()
+drawCanvas :: DrawWindow -> XS ()
 drawCanvas canvas = do
   let drawable = castToDrawable canvas
-  (w,h) <- drawableGetSize drawable
-  renderWithDrawable canvas (myDraw (fromIntegral w) (fromIntegral h))
+  state <- get
+  (w,h) <- io $ drawableGetSize drawable
+  io $ renderWithDrawable canvas (
+                             myDraw 
+                             (fromIntegral w) 
+                             (fromIntegral h) 
+                             (doc state))
   return ()
 \end{code}
 
 \begin{code}
-myDraw :: Double -> Double -> Cr.Render ()
-myDraw w h = do
-    Cr.setSourceRGB 0.7 0.7 0.7
+myDraw :: Double -> Double -> SkemaDoc -> Cr.Render ()
+myDraw w h doc = do
+    Cr.setSourceRGB 0.45 0.45 0.45
     Cr.paint
 
-    Cr.setSourceRGB 0 1 1
-    Cr.setLineWidth 5
+    Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
+    mapM_ drawVisualNode (nodes doc)
+\end{code}
 
-    Cr.moveTo (0.5 * w) (0.43 * h)
-    Cr.lineTo (0.33 * w) (0.71 * h)
-    Cr.lineTo (0.66 * w) (0.71 * h)
-
+\begin{code}
+drawVisualNode :: VisualNode -> Cr.Render ()
+drawVisualNode node = do
+    let px = posx.position $ node
+        py = posy.position $ node
+        wid = 60
+        hei = 80
+        rad = 4
+    -- shadow 1
+    Cr.newPath
+    Cr.arc (px+wid) (py+2*rad) rad (deg2rad $ -90) (deg2rad 0)
+    Cr.arc (px+wid) (py+hei) rad (deg2rad 0) (deg2rad 90)
+    Cr.arc (px) (py+hei) rad (deg2rad 90) (deg2rad 180)
+    Cr.arc (px) (py+2*rad) rad (deg2rad 180) (deg2rad $ -90)
     Cr.closePath
+    Cr.setSourceRGBA 0 0 0 0.2
+    Cr.fill
 
+    -- shadow 2
+    Cr.newPath
+    Cr.arc (px+wid-2) (py+2*rad+2) rad (deg2rad $ -90) (deg2rad 0)
+    Cr.arc (px+wid-2) (py+hei-2) rad (deg2rad 0) (deg2rad 90)
+    Cr.arc (px+2) (py+hei-2) rad (deg2rad 90) (deg2rad 180)
+    Cr.arc (px+2) (py+2*rad+2) rad (deg2rad 180) (deg2rad $ -90)
+    Cr.closePath
+    Cr.setSourceRGBA 0 0 0 0.2
+    Cr.fill
+
+    -- box
+    Cr.newPath
+    Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
+    Cr.arc (px+wid-rad) (py+hei-rad) rad (deg2rad 0) (deg2rad 90)
+    Cr.arc (px+rad) (py+hei-rad) rad (deg2rad 90) (deg2rad 180)
+    Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
+    Cr.closePath
+    Cr.setSourceRGB 0.59 0.59 0.59
+    Cr.fillPreserve
+    Cr.setLineWidth 1
+    Cr.setSourceRGB 0.15 0.15 0.15
     Cr.stroke
 
-    Cr.setSourceRGB 0.4 1 1
-    Cr.rectangle (0.1 * w) (0.1 * h) (0.4 * w) (0.25 * h)
-    Cr.fill
-    Cr.setSourceRGB 0.7 1 1
-    Cr.rectangle (0.1 * w) (0.1 * h) (0.4 * w) (0.25 * h)
-    Cr.stroke
-
-    Cr.setSourceRGB 0 0 0
-    Cr.moveTo 0 0
-    Cr.lineTo w h
-    Cr.moveTo w 0
-    Cr.lineTo 0 h
-    Cr.setLineWidth (0.1 * (h + w))
-    Cr.stroke
-
-    Cr.rectangle 0 0 (0.5 * w) (0.5 * h)
-    Cr.setSourceRGBA 1 0 0 0.8
+    -- header
+    Cr.newPath
+    Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
+    Cr.lineTo (px+wid) (py+12)
+    Cr.lineTo px (py+12)
+    Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
+    Cr.closePath
+    Cr.setSourceRGB 0.51 0.51 0.56
     Cr.fill
 
-    Cr.rectangle 0 (0.5 * h) (0.5 * w) (0.5 * h)
-    Cr.setSourceRGBA 0 1 0 0.6
-    Cr.fill
-
-    Cr.rectangle (0.5 * w) 0 (0.5 * w) (0.5 * h)
-    Cr.setSourceRGBA 0 0 1 0.4
-    Cr.fill
-    Cr.setSourceRGB 0 1 0
-    Cr.selectFontFace "Arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    Cr.setFontSize 20
-    Cr.moveTo 0 10
-    Cr.showText "test"
+    Cr.setSourceRGB 1 1 1
+    Cr.setFontSize 10
+    Cr.moveTo (px + 2) (py + 11)
+    Cr.showText "Test Node"
 \end{code}

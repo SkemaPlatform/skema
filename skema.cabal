@@ -16,6 +16,7 @@ Library
   Exposed-modules: 
     Skema
     Skema.VisualCore
+    Skema.SkemaDoc
     Skema.Block.Function
 
 Executable test01
