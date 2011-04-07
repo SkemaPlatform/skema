@@ -1,9 +1,13 @@
+#+STARTUP: showall
+
 * 1 Iteracion: Prototipo
 
 Prototipo de interfaz gráfico
 
 ** A realizar en Haskell:
 *** con Gtk como libreria GUI
+para el estado en Gtk se usa MVar para compartir estado entre eventos y StateM para pasar el estado dentro del manejador de eventos
+
 *** Cairo para dibujar
 *** xmonad como referencia
 *** zipper estructura principal
