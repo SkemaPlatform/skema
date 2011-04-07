@@ -1,7 +1,16 @@
 \begin{code}
 import Control.Monad.Trans( liftIO )
 import Graphics.UI.Gtk
+    ( on, mainQuit, initGUI, mainGUI, onDestroy, onExpose
+    , castToWindow, widgetShowAll, widgetGetSize
+    , widgetGetDrawWindow, renderWithDrawable
+    , widgetModifyBg, StateType(..), Color(..)
+    , eventWindow, castToDrawable, drawableGetSize
+    , DrawWindow(..) )
+import Graphics.UI.Gtk.Abstract.Widget
+    ( exposeEvent, buttonPressEvent )
 import Graphics.UI.Gtk.Gdk.EventM
+    ( tryEvent )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr

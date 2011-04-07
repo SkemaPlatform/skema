@@ -12,8 +12,10 @@ Data-Files:    *.glade
 
 Library
   hs-source-dirs:  src
-  Build-Depends:   base>=4
+  Build-Depends:   base>=4, mtl>=2.0, transformers>=0.2
   Exposed-modules: 
+    Skema
+    Skema.VisualCore
     Skema.Block.Function
 
 Executable test01
@@ -25,4 +27,4 @@ Executable skema
   hs-source-dirs:  src
   Main-is:         skema_main.lhs
   Build-Depends:   base>=4, cairo>=0.10, gtk>=0.10, glade>=0.10,
-                   mtl>=1.1
+                   mtl>=2.0

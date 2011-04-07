@@ -1,6 +1,10 @@
 \begin{code}
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Gdk.Events
+    ( mainQuit, initGUI, mainGUI, onDestroy, onExpose
+    , castToWindow, widgetShowAll, widgetGetSize
+    , widgetGetDrawWindow, renderWithDrawable
+    , widgetModifyBg, StateType(..), Color(..) )
+import Graphics.UI.Gtk.Gdk.Events( eventSent )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
