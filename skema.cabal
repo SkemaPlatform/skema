@@ -15,7 +15,6 @@ Library
   Build-Depends:   base>=4, mtl>=2.0, transformers>=0.2
   Exposed-modules: 
     Skema
-    Skema.VisualCore
     Skema.SkemaDoc
     Skema.Block.Function
 
