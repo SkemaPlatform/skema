@@ -1,0 +1,31 @@
+* 1 Iteracion: Prototipo
+
+Prototipo de interfaz gráfico
+
+** A realizar en Haskell:
+*** con Gtk como libreria GUI
+*** Cairo para dibujar
+*** xmonad como referencia
+*** zipper estructura principal
+
+** Casos de Uso
+*** Insertar un nodo computación
+*** Borrar un nodo de computación
+*** Mover un nodo computación
+*** Juntar una salida de un nodo con una entrada de otro
+*** Borrar una conexion
+*** Mover una entrada
+*** Mover una salida
+
+** Diccionario de tipos
+*** Nodo de Computación
+*** Clase de Nodo
+*** Flujo de datos
+
+** Ayuda consultada
+*** Diseño de Xmonad
+*** Zipper como estructura básica
+*** Interfaz de Usuario de Blender
+*** Como construir programas de Haskell
+http://www.haskell.org/haskellwiki/How_to_write_a_Haskell_program
+*** http://en.wikipedia.org/wiki/Dataflow_programming
