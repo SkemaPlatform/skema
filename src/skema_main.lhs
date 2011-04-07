@@ -144,8 +144,38 @@ drawVisualNode node = do
     Cr.setSourceRGB 0.51 0.51 0.56
     Cr.fill
 
+    -- in/out points
+    Cr.setLineWidth 1
+    Cr.arc px (py+hei-20) rad (deg2rad 0) (deg2rad 360)
+    Cr.setSourceRGB 0.78 0.78 0.16
+    Cr.fillPreserve
+    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.stroke
+
+    Cr.arc px (py+hei-30) rad (deg2rad 0) (deg2rad 360)
+    Cr.setSourceRGB 0.78 0.78 0.16
+    Cr.fillPreserve
+    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.stroke
+
+    Cr.arc (px+wid) (py+20) rad (deg2rad 0) (deg2rad 360)
+    Cr.setSourceRGB 0.16 0.78 0.78
+    Cr.fillPreserve
+    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.stroke
+
     Cr.setSourceRGB 1 1 1
     Cr.setFontSize 10
     Cr.moveTo (px + 2) (py + 11)
     Cr.showText "Test Node"
+
+    Cr.setSourceRGB 1 1 1
+    Cr.setFontSize 8
+    Cr.moveTo (px+6) (py+hei-18)
+    Cr.showText "in x"
+    Cr.moveTo (px+6) (py+hei-28)
+    Cr.showText "in y"
+    textSize <- Cr.textExtents "out z"
+    Cr.moveTo (px+wid-(Cr.textExtentsWidth textSize)-6) (py+22)
+    Cr.showText "out z"
 \end{code}
