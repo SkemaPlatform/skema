@@ -16,11 +16,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, newMVar, takeMVar, putMVar )
+import Control.Concurrent.MVar( newMVar, takeMVar, putMVar )
 import Graphics.UI.Gtk
-    ( on, mainQuit, initGUI, mainGUI, onDestroy, onExpose
-    , castToWindow, widgetShowAll, widgetGetSize
-    , widgetGetDrawWindow, renderWithDrawable
+    ( on, mainQuit, initGUI, mainGUI, onDestroy
+    , castToWindow, widgetShowAll, renderWithDrawable
     , widgetModifyBg, StateType(..), Color(..)
     , eventWindow, castToDrawable, drawableGetSize
     , DrawWindow, DrawingArea )
@@ -41,13 +40,21 @@ import Skema.Util( deg2rad )
 \end{code}
 
 \begin{code}
+data SelectedElement = SE_NOTHING
+                     | SE_NODE
+                     | SE_NODE_BAR
+                     | SE_INOUT
+                       deriving( Show )
+\end{code}
+
+\begin{code}
 main :: IO ()
 main= do
-  initGUI
+  _ <- initGUI
   glade <- getDataFileName "skema.glade"
   Just xml <- xmlNew glade
   window <- xmlGetWidget xml castToWindow "main"
-  onDestroy window mainQuit
+  _ <- onDestroy window mainQuit
  
   canvas <- xmlGetWidget xml castToDrawingArea "canvas"
   
@@ -62,43 +69,46 @@ main= do
 
   widgetAddEvents canvas [Button1MotionMask]
 
-  canvas `on` exposeEvent $ tryEvent $ do
-        canvas <- eventWindow
-        sks <- liftIO $ takeMVar state
-        (_,new_sks) <- liftIO $ runXS sks $ drawCanvas canvas
-        liftIO $ putMVar state new_sks
+  _ <- canvas `on` exposeEvent $ tryEvent $ do
+         eventCanvas <- eventWindow
+         sks <- liftIO $ takeMVar state
+         (_,new_sks) <- liftIO $ runXS sks $ drawCanvas eventCanvas
+         liftIO $ putMVar state new_sks
 
-  canvas `on` buttonPressEvent $ tryEvent $ do
-        LeftButton <- eventButton
-        SingleClick <- eventClick
-        (mx,my) <- eventCoordinates
-        liftIO $ print (mx,my)
-        sks <- liftIO $ takeMVar state
-        (_,new_sks) <- liftIO $ runXS sks $ testButton canvas
-        liftIO $ putMVar state new_sks
+  _ <- canvas `on` buttonPressEvent $ tryEvent $ do
+         LeftButton <- eventButton
+         SingleClick <- eventClick
+         (mx,my) <- eventCoordinates
+         liftIO $ print (mx,my)
+         sks <- liftIO $ takeMVar state
+         (_,new_sks) <- liftIO $ runXS sks $ testButton canvas
+         liftIO $ putMVar state new_sks
 
-  canvas `on` buttonReleaseEvent $ tryEvent $ do
-        (mx,my) <- eventCoordinates
-        liftIO $ putStrLn $ "release" ++ show (mx,my)
+  _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
+         (mx,my) <- eventCoordinates
+         liftIO $ putStrLn $ "release" ++ show (mx,my)
+         
+  _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
+         (mx,my) <- eventCoordinates
+         liftIO $ putStrLn $ "release" ++ show (mx,my)
+                           
+  _ <- canvas `on` leaveNotifyEvent $ tryEvent $ do
+         (mx,my) <- eventCoordinates
+         liftIO $ putStrLn $ "out in" ++ show (mx,my)
 
-  canvas `on` buttonReleaseEvent $ tryEvent $ do
-        (mx,my) <- eventCoordinates
-        liftIO $ putStrLn $ "release" ++ show (mx,my)
-
-  canvas `on` leaveNotifyEvent $ tryEvent $ do
-        (mx,my) <- eventCoordinates
-        liftIO $ putStrLn $ "out in" ++ show (mx,my)
-
-  canvas `on` motionNotifyEvent $ tryEvent $ do
-        (mx,my) <- eventCoordinates
-        liftIO $ putStrLn $ "move to" ++ show (mx,my)
+  _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
+         (mx,my) <- eventCoordinates
+         liftIO $ putStrLn $ "move to" ++ show (mx,my)
         
-  canvas `on` buttonPressEvent $ tryEvent $ do
-        RightButton <- eventButton
-        liftIO $ putStrLn "boton derecho"
+  _ <- canvas `on` buttonPressEvent $ tryEvent $ do
+         RightButton <- eventButton
+         liftIO $ putStrLn "boton derecho"
 
-  onDestroy window mainQuit
   mainGUI
+\end{code}
+
+\begin{code}
+--selectNode :: 
 \end{code}
 
 \begin{code}
@@ -130,12 +140,12 @@ drawCanvas canvas = do
 
 \begin{code}
 myDraw :: Double -> Double -> SkemaDoc -> Cr.Render ()
-myDraw w h doc = do
+myDraw _ _ skdoc = do
     Cr.setSourceRGB 0.45 0.45 0.45
     Cr.paint
 
     Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    mapM_ drawVisualNode (nodes doc)
+    mapM_ drawVisualNode (nodes skdoc)
 \end{code}
 
 \begin{code}

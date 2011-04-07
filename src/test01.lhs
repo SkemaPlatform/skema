@@ -30,24 +30,23 @@ import Paths_skema( getDataFileName )
 \begin{code}
 main :: IO ()
 main= do
-  initGUI
+  _ <- initGUI
   glade <- getDataFileName "skema.glade"
   Just xml <- xmlNew glade
   window <- xmlGetWidget xml castToWindow "main"
-  onDestroy window mainQuit
+  _ <- onDestroy window mainQuit
  
   canvas <- xmlGetWidget xml castToDrawingArea "canvas"
   
   widgetModifyBg canvas StateNormal (Color 65535 65535 65535)
 
   widgetShowAll window 
-  onExpose canvas (\x -> do 
-                     (w,h) <- widgetGetSize canvas
-                     drawin <- widgetGetDrawWindow canvas
-                     renderWithDrawable drawin (myDraw (fromIntegral w) (fromIntegral h))
-                     return (eventSent x))
+  _ <- onExpose canvas (\x -> do 
+                          (w,h) <- widgetGetSize canvas
+                          drawin <- widgetGetDrawWindow canvas
+                          renderWithDrawable drawin (myDraw (fromIntegral w) (fromIntegral h))
+                          return (eventSent x))
                          
-  onDestroy window mainQuit
   mainGUI
 \end{code}
 
