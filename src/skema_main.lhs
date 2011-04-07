@@ -9,9 +9,12 @@ import Graphics.UI.Gtk
     , eventWindow, castToDrawable, drawableGetSize
     , DrawWindow, DrawingArea )
 import Graphics.UI.Gtk.Abstract.Widget
-    ( exposeEvent, buttonPressEvent, widgetQueueDraw )
+    ( widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent
+    , leaveNotifyEvent, motionNotifyEvent, widgetQueueDraw
+    , EventMask(..) )
 import Graphics.UI.Gtk.Gdk.EventM
-    ( tryEvent )
+    ( tryEvent, eventButton, eventClick, eventCoordinates
+    , MouseButton(..), Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
@@ -41,6 +44,8 @@ main= do
 
   state <- newMVar st
 
+  widgetAddEvents canvas [Button1MotionMask]
+
   canvas `on` exposeEvent $ tryEvent $ do
         canvas <- eventWindow
         sks <- liftIO $ takeMVar state
@@ -48,9 +53,33 @@ main= do
         liftIO $ putMVar state new_sks
 
   canvas `on` buttonPressEvent $ tryEvent $ do
+        LeftButton <- eventButton
+        SingleClick <- eventClick
+        (mx,my) <- eventCoordinates
+        liftIO $ print (mx,my)
         sks <- liftIO $ takeMVar state
         (_,new_sks) <- liftIO $ runXS sks $ testButton canvas
         liftIO $ putMVar state new_sks
+
+  canvas `on` buttonReleaseEvent $ tryEvent $ do
+        (mx,my) <- eventCoordinates
+        liftIO $ putStrLn $ "release" ++ show (mx,my)
+
+  canvas `on` buttonReleaseEvent $ tryEvent $ do
+        (mx,my) <- eventCoordinates
+        liftIO $ putStrLn $ "release" ++ show (mx,my)
+
+  canvas `on` leaveNotifyEvent $ tryEvent $ do
+        (mx,my) <- eventCoordinates
+        liftIO $ putStrLn $ "out in" ++ show (mx,my)
+
+  canvas `on` motionNotifyEvent $ tryEvent $ do
+        (mx,my) <- eventCoordinates
+        liftIO $ putStrLn $ "move to" ++ show (mx,my)
+        
+  canvas `on` buttonPressEvent $ tryEvent $ do
+        RightButton <- eventButton
+        liftIO $ putStrLn "boton derecho"
 
   onDestroy window mainQuit
   mainGUI
