@@ -85,13 +85,10 @@ main= do
          liftIO $ putMVar state new_sks
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
+         LeftButton <- eventButton
          (mx,my) <- eventCoordinates
          liftIO $ putStrLn $ "release" ++ show (mx,my)
          
-  _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
-         (mx,my) <- eventCoordinates
-         liftIO $ putStrLn $ "release" ++ show (mx,my)
-                           
   _ <- canvas `on` leaveNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
          liftIO $ putStrLn $ "out in" ++ show (mx,my)
