@@ -18,7 +18,7 @@
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( newMVar, takeMVar, putMVar )
 import qualified Data.Map as Map
-    ( singleton, elems, assocs, adjust, keys, insert )
+    ( Map, singleton, elems, assocs, adjust, keys, insert )
 import Data.List( sort )
 import Graphics.UI.Gtk
     ( on, mainQuit, initGUI, mainGUI, onDestroy
@@ -41,9 +41,9 @@ import Skema
     ( SkemaState(..), XS(..), io, runXS, trace
     , statePutSelectedPos, statePutSelectedElem, statePutSkemaDoc, stateGet )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), VisualNode(..), Position(..), SelectedElement(..)
+    ( SkemaDoc(..), Kernel(..), Node(..), Position(..), SelectedElement(..)
     , nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
-    , nodeTranslate, nodeLineColor, nodeBoxColor, nodeHeadColor
+    , nodeTranslate, nodeLineColor, nodeBoxColor, nodeHeadColor, nodeName
     , selectNode, isSelected )
 import Skema.Util( deg2rad )
 \end{code}
@@ -64,7 +64,9 @@ main= do
   widgetShowAll window 
 
   let st = SkemaState 
-           { skemaDoc = SkemaDoc (Map.singleton 0 (VisualNode $ Position 210 20))
+           { skemaDoc = SkemaDoc 
+                        (Map.singleton 0 (Kernel "Adder"))
+                        (Map.singleton 0 (NodeKernel (Position 210 20) 0))
            , selectedPos = (0,0) 
            , selectedElem = SE_NOTHING }
 
@@ -123,7 +125,7 @@ insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
   old_doc <- stateGet skemaDoc
   let last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
-      new_node = VisualNode $ Position x y 
+      new_node = NodeKernel (Position x y) 0
   statePutSkemaDoc $ old_doc { 
                          nodes = Map.insert last_i new_node (nodes old_doc)}
 \end{code}
@@ -170,17 +172,18 @@ myDraw _ _ skdoc = do
     Cr.paint
 
     Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    mapM_ drawVisualNode (Map.elems.nodes $ skdoc)
+    mapM_ (drawVisualNode skdoc) (Map.elems.nodes $ skdoc)
 \end{code}
 
 \begin{code}
-drawVisualNode :: VisualNode -> Cr.Render ()
-drawVisualNode node = do
+drawVisualNode :: SkemaDoc -> Node -> Cr.Render ()
+drawVisualNode skdoc node = do
     let px = nodePosx node
         py = nodePosy node
         wid = nodeWidth node
         hei = nodeHeight node
         headHeight = nodeHeadHeight node
+        name = nodeName skdoc node
         rad = 4
         pointRad = nodePointRad node
         (rline, gline, bline) = nodeLineColor node
@@ -253,7 +256,7 @@ drawVisualNode node = do
     Cr.setSourceRGB 1 1 1
     Cr.setFontSize 10
     Cr.moveTo (px + 2) (py + 11)
-    Cr.showText "Test Node"
+    Cr.showText name
 
     Cr.setSourceRGB 1 1 1
     Cr.setFontSize 8

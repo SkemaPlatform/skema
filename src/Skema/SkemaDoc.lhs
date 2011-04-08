@@ -19,7 +19,7 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
-import qualified Data.Map as Map
+import qualified Data.Map as Map( Map, empty, lookup )
 import Skema.Util( Rect(..), inside )
 \end{code}
 
@@ -30,48 +30,57 @@ data Position = Position
 \end{code}
 
 \begin{code}
-data VisualNode = VisualNode
-    { position :: !Position }
+data Node = NodeKernel
+    { position :: !Position
+    , kernelIdx :: !Int }
+    | NodeInt !Int
 \end{code}
 
 \begin{code}
-nodePointRad :: VisualNode -> Double
+nodeName :: SkemaDoc -> Node -> String
+nodeName skdoc node = maybe "*noname*" name maybeKernel
+    where
+      maybeKernel = Map.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+nodePointRad :: Node -> Double
 nodePointRad = const 4
 \end{code}
 
 \begin{code}
-nodePosx :: VisualNode -> Double
+nodePosx :: Node -> Double
 nodePosx = posx . position
 \end{code}
 
 \begin{code}
-nodePosy :: VisualNode -> Double
+nodePosy :: Node -> Double
 nodePosy = posy . position
 \end{code}
 
 \begin{code}
-nodeHeight :: VisualNode -> Double
+nodeHeight :: Node -> Double
 nodeHeight = const 80
 \end{code}
 
 \begin{code}
-nodeWidth :: VisualNode -> Double
+nodeWidth :: Node -> Double
 nodeWidth = const 60
 \end{code}
 
 \begin{code}
-nodeHeadHeight :: VisualNode -> Double
+nodeHeadHeight :: Node -> Double
 nodeHeadHeight = const 12
 \end{code}
 
 \begin{code}
-nodeMoveTo :: Double -> Double -> VisualNode -> VisualNode
-nodeMoveTo nx ny node = VisualNode (Position nx ny)
+nodeMoveTo :: Double -> Double -> Node -> Node
+nodeMoveTo nx ny node = node { position = Position nx ny }
 \end{code}
 
 \begin{code}
-nodeTranslate :: Double -> Double -> VisualNode -> VisualNode
-nodeTranslate dx dy node = VisualNode (Position nx ny)
+nodeTranslate :: Double -> Double -> Node -> Node
+nodeTranslate dx dy node = node { position = Position nx ny }
     where
       nx = nodePosx node + dx
       ny = nodePosy node + dy
@@ -82,18 +91,23 @@ type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}
-nodeLineColor :: VisualNode -> RGBColor
+nodeLineColor :: Node -> RGBColor
 nodeLineColor = const (0.15,0.15,0.15)
 \end{code}
 
 \begin{code}
-nodeBoxColor :: VisualNode -> RGBColor
+nodeBoxColor :: Node -> RGBColor
 nodeBoxColor = const (0.59,0.59,0.59)
 \end{code}
 
 \begin{code}
-nodeHeadColor :: VisualNode -> RGBColor
+nodeHeadColor :: Node -> RGBColor
 nodeHeadColor = const (0.51,0.51,0.56)
+\end{code}
+
+\begin{code}
+data Kernel = Kernel
+    { name :: String }
 \end{code}
 
 \begin{code}
@@ -103,7 +117,7 @@ data SelectedElement = SE_NOTHING
 \end{code}
 
 \begin{code}
-selectNode :: Double -> Double -> (Int,VisualNode) -> SelectedElement
+selectNode :: Double -> Double -> (Int,Node) -> SelectedElement
 selectNode mx my (k,node)
     | inside mx my (Rect (nodePosx node) (nodePosy node) (nodePosx node + nodeWidth node) (nodePosy node + nodeHeight node)) = SE_NODE k
     | otherwise = SE_NOTHING
@@ -117,5 +131,10 @@ isSelected _ = True
 
 \begin{code}
 data SkemaDoc = SkemaDoc 
-    { nodes :: Map.Map Int VisualNode }
+    { library :: Map.Map Int Kernel
+    , nodes :: Map.Map Int Node }
+\end{code}
+
+\begin{code}
+emptySkemaDoc = SkemaDoc Map.empty Map.empty
 \end{code}
