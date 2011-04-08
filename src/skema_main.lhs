@@ -18,7 +18,7 @@
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( newMVar, takeMVar, putMVar )
 import qualified Data.Map as Map
-    ( Map, singleton, elems, assocs, adjust, keys, insert )
+    ( Map, singleton, elems, assocs, adjust, keys, insert, fromList )
 import Data.List( sort )
 import Graphics.UI.Gtk
     ( on, mainQuit, initGUI, mainGUI, onDestroy
@@ -65,7 +65,7 @@ main= do
 
   let st = SkemaState 
            { skemaDoc = SkemaDoc 
-                        (Map.singleton 0 (Kernel "Adder"))
+                        (Map.fromList [(0,Kernel "Adder"),(1,Kernel "Scaler")])
                         (Map.singleton 0 (NodeKernel (Position 210 20) 0))
            , selectedPos = (0,0) 
            , selectedElem = SE_NOTHING }
@@ -125,7 +125,7 @@ insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
   old_doc <- stateGet skemaDoc
   let last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
-      new_node = NodeKernel (Position x y) 0
+      new_node = NodeKernel (Position x y) 1
   statePutSkemaDoc $ old_doc { 
                          nodes = Map.insert last_i new_node (nodes old_doc)}
 \end{code}
