@@ -16,7 +16,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Skema( SkemaState(..), XS(..), io, runXS, get, put ) where
+module Skema
+    ( SkemaState(..), XS(..), io, runXS, get, put, trace, whenXS
+    , stateSetSelectedPos, stateSetSelectedElem, stateGetSelectedElem
+    , stateGetDoc ) 
+        where
 \end{code}
 
 \begin{code}
@@ -24,12 +28,14 @@ import Control.Monad( when )
 import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
 import System.IO( hPutStrLn, stderr )
-import Skema.SkemaDoc( SkemaDoc )
+import Skema.SkemaDoc( SkemaDoc, SelectedElement )
 \end{code}
 
 \begin{code}
 data SkemaState = SkemaState
-    { doc :: SkemaDoc }
+    { doc :: SkemaDoc
+    , selectedPos :: !(Double,Double)
+    , selectedElem :: !SelectedElement }
 \end{code}
 
 \begin{code}
@@ -43,8 +49,8 @@ io = liftIO
 \end{code}
 
 \begin{code}
-whenX :: XS Bool -> XS () -> XS ()
-whenX a f = a >>= \b -> when b f
+whenXS :: XS Bool -> XS () -> XS ()
+whenXS a f = a >>= \b -> when b f
 \end{code}
 
 \begin{code}
@@ -55,4 +61,24 @@ trace = io . hPutStrLn stderr
 \begin{code}
 runXS :: SkemaState -> XS a -> IO (a, SkemaState)
 runXS st (XS a) = runStateT a st
+\end{code}
+
+\begin{code}
+stateSetSelectedPos :: (Double,Double) -> XS ()
+stateSetSelectedPos pos = get >>= \s -> put $ s{ selectedPos = pos }
+\end{code}
+
+\begin{code}
+stateSetSelectedElem :: SelectedElement -> XS ()
+stateSetSelectedElem se = get >>= \s -> put $ s{ selectedElem = se }
+\end{code}
+
+\begin{code}
+stateGetDoc :: XS SkemaDoc
+stateGetDoc = get >>= \s -> return $ doc s
+\end{code}
+
+\begin{code}
+stateGetSelectedElem :: XS SelectedElement
+stateGetSelectedElem = get >>= \s -> return $ selectedElem s
 \end{code}

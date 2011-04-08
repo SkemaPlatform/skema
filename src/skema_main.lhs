@@ -17,6 +17,9 @@
 \begin{code}
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( newMVar, takeMVar, putMVar )
+import qualified Data.Map as Map
+    ( singleton, elems, assocs, adjust, keys, insert )
+import Data.List( sort )
 import Graphics.UI.Gtk
     ( on, mainQuit, initGUI, mainGUI, onDestroy
     , castToWindow, widgetShowAll, renderWithDrawable
@@ -34,19 +37,16 @@ import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
-import Skema( SkemaState(..), XS(..), io, runXS, get, put )
+import Skema
+    ( SkemaState(..), XS(..), io, runXS, get, put
+    , stateSetSelectedPos, stateSetSelectedElem, stateGetSelectedElem
+    , stateGetDoc )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), VisualNode(..), Position(..), currentHeight, currentWidth
-    , nodePointRad, nodeLineColor, nodeBoxColor, nodeHeadColor )
+    ( SkemaDoc(..), VisualNode(..), Position(..), SelectedElement(..)
+    , nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
+    , nodeTranslate, nodeLineColor, nodeBoxColor, nodeHeadColor
+    , selectNode, isSelected )
 import Skema.Util( deg2rad )
-\end{code}
-
-\begin{code}
-data SelectedElement = SE_NOTHING
-                     | SE_NODE
-                     | SE_NODE_BAR
-                     | SE_INOUT
-                       deriving( Show )
 \end{code}
 
 \begin{code}
@@ -65,7 +65,9 @@ main= do
   widgetShowAll window 
 
   let st = SkemaState 
-           { doc = SkemaDoc [] }
+           { doc = SkemaDoc (Map.singleton 0 (VisualNode $ Position 210 20))
+           , selectedPos = (0,0) 
+           , selectedElem = SE_NOTHING }
 
   state <- newMVar st
 
@@ -81,9 +83,8 @@ main= do
          LeftButton <- eventButton
          SingleClick <- eventClick
          (mx,my) <- eventCoordinates
-         liftIO $ print (mx,my)
          sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ testButton canvas
+         (_,new_sks) <- liftIO $ runXS sks $ selectElement mx my canvas
          liftIO $ putMVar state new_sks
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
@@ -97,7 +98,9 @@ main= do
 
   _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
-         liftIO $ putStrLn $ "move to" ++ show (mx,my)
+         sks <- liftIO $ takeMVar state
+         (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
+         liftIO $ putMVar state new_sks                    
         
   _ <- canvas `on` buttonPressEvent $ tryEvent $ do
          RightButton <- eventButton
@@ -107,34 +110,66 @@ main= do
 \end{code}
 
 \begin{code}
---selectNode :: 
+selectElement :: Double -> Double -> DrawingArea -> XS ()
+selectElement mx my canvas = do
+  stDoc <- stateGetDoc
+  let sels = filter isSelected . map (selectNode mx my) . Map.assocs.nodes $ stDoc
+  if (null sels) 
+    then do
+      insertNewNode mx my
+      stateSetSelectedElem SE_NOTHING
+      io $ widgetQueueDraw canvas
+    else do
+      stateSetSelectedElem (last sels)
+  stateSetSelectedPos (mx, my)
 \end{code}
 
 \begin{code}
-testButton :: DrawingArea -> XS ()
-testButton canvas = do
+insertNewNode :: Double -> Double -> XS ()
+insertNewNode x y = do
   state <- get
   let old_doc = doc state
-      old_nodes = nodes old_doc
-      new_node = VisualNode $ Position (20 + 50*(fromIntegral$length old_nodes)) (20 + 20*(fromIntegral$length old_nodes))
+      last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
+      new_node = VisualNode $ Position x y 
   put $ state {
-               doc = old_doc { 
-                       nodes = old_nodes ++ [new_node]}}
+            doc = old_doc { nodes = Map.insert last_i new_node (nodes old_doc)}}
+\end{code}
+
+\begin{code}
+moveTo :: Double -> Double -> DrawingArea -> XS ()
+moveTo mx my canvas = do
+  stElem <- stateGetSelectedElem
+  moveSelectedElement mx my stElem
   io $ widgetQueueDraw canvas
+\end{code}
+
+\begin{code}
+moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
+moveSelectedElement _ _ SE_NOTHING = return ()
+moveSelectedElement mx my (SE_NODE k) = do
+  state <- get
+  let my_doc = doc state
+      origen = selectedPos state
+      diffx = mx - (fst origen)
+      diffy = my - (snd origen)
+      new_nodes = Map.adjust (nodeTranslate diffx diffy) k (nodes my_doc)
+      new_doc = my_doc { nodes = new_nodes }
+      new_state = state { doc = new_doc, selectedPos = (mx,my) }
+  
+  put new_state
 \end{code}
 
 \begin{code}
 drawCanvas :: DrawWindow -> XS ()
 drawCanvas canvas = do
   let drawable = castToDrawable canvas
-  state <- get
+  stDoc <- stateGetDoc
   (w,h) <- io $ drawableGetSize drawable
   io $ renderWithDrawable canvas (
                              myDraw 
                              (fromIntegral w) 
                              (fromIntegral h) 
-                             (doc state))
-  return ()
+                             stDoc)
 \end{code}
 
 \begin{code}
@@ -144,16 +179,17 @@ myDraw _ _ skdoc = do
     Cr.paint
 
     Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    mapM_ drawVisualNode (nodes skdoc)
+    mapM_ drawVisualNode (Map.elems.nodes $ skdoc)
 \end{code}
 
 \begin{code}
 drawVisualNode :: VisualNode -> Cr.Render ()
 drawVisualNode node = do
-    let px = posx.position $ node
-        py = posy.position $ node
-        wid = currentWidth node
-        hei = currentHeight node
+    let px = nodePosx node
+        py = nodePosy node
+        wid = nodeWidth node
+        hei = nodeHeight node
+        headHeight = nodeHeadHeight node
         rad = 4
         pointRad = nodePointRad node
         (rline, gline, bline) = nodeLineColor node
@@ -196,8 +232,8 @@ drawVisualNode node = do
     -- header
     Cr.newPath
     Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.lineTo (px+wid) (py+12)
-    Cr.lineTo px (py+12)
+    Cr.lineTo (px+wid) (py+headHeight)
+    Cr.lineTo px (py+headHeight)
     Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
     Cr.closePath
     Cr.setSourceRGB rhead ghead bhead

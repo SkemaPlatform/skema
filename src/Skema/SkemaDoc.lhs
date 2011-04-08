@@ -19,6 +19,11 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
+import qualified Data.Map as Map
+import Skema.Util( Rect(..), inside )
+\end{code}
+
+\begin{code}
 data Position = Position 
     { posx :: !Double
     , posy :: !Double }
@@ -35,13 +40,41 @@ nodePointRad = const 4
 \end{code}
 
 \begin{code}
-currentHeight :: VisualNode -> Double
-currentHeight = const 80
+nodePosx :: VisualNode -> Double
+nodePosx = posx . position
 \end{code}
 
 \begin{code}
-currentWidth :: VisualNode -> Double
-currentWidth = const 60
+nodePosy :: VisualNode -> Double
+nodePosy = posy . position
+\end{code}
+
+\begin{code}
+nodeHeight :: VisualNode -> Double
+nodeHeight = const 80
+\end{code}
+
+\begin{code}
+nodeWidth :: VisualNode -> Double
+nodeWidth = const 60
+\end{code}
+
+\begin{code}
+nodeHeadHeight :: VisualNode -> Double
+nodeHeadHeight = const 12
+\end{code}
+
+\begin{code}
+nodeMoveTo :: Double -> Double -> VisualNode -> VisualNode
+nodeMoveTo nx ny node = VisualNode (Position nx ny)
+\end{code}
+
+\begin{code}
+nodeTranslate :: Double -> Double -> VisualNode -> VisualNode
+nodeTranslate dx dy node = VisualNode (Position nx ny)
+    where
+      nx = (nodePosx node) + dx
+      ny = (nodePosy node) + dy
 \end{code}
 
 \begin{code}
@@ -64,6 +97,25 @@ nodeHeadColor = const (0.51,0.51,0.56)
 \end{code}
 
 \begin{code}
+data SelectedElement = SE_NOTHING
+                     | SE_NODE Int
+                       deriving( Show )
+\end{code}
+
+\begin{code}
+selectNode :: Double -> Double -> (Int,VisualNode) -> SelectedElement
+selectNode mx my (k,node)
+    | inside mx my (Rect (nodePosx node) (nodePosy node) ((nodePosx node) + (nodeWidth node)) ((nodePosy node) + (nodeHeight node))) = SE_NODE k
+    | otherwise = SE_NOTHING
+\end{code}
+
+\begin{code}
+isSelected :: SelectedElement -> Bool
+isSelected SE_NOTHING = False
+isSelected _ = True
+\end{code}
+
+\begin{code}
 data SkemaDoc = SkemaDoc 
-    { nodes :: [VisualNode] }
+    { nodes :: Map.Map Int VisualNode }
 \end{code}

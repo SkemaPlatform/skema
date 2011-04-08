@@ -15,10 +15,23 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Util( deg2rad ) where
+module Skema.Util( Rect(..), deg2rad, inside ) where
+\end{code}
+
+\begin{code}
+data Rect = Rect
+    { x0 :: !Double, y0 :: !Double, x1 :: !Double, y1 :: !Double }
 \end{code}
 
 \begin{code}
 deg2rad :: (Floating a) => a -> a
 deg2rad d = d * (pi / 180)
+\end{code}
+
+\begin{code}
+inside :: Double -> Double -> Rect -> Bool
+inside px py rect = inx && iny
+    where
+      inx = (px >= (x0 rect)) && (px < (x1 rect))
+      iny = (py >= (y0 rect)) && (py < (y1 rect))
 \end{code}
