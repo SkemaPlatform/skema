@@ -18,7 +18,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Skema
     ( SkemaState(..), XS(..), io, runXS, get, put, trace, whenXS
-    , stateSetSelectedPos, stateSetSelectedElem, stateGet ) 
+    , statePutSelectedPos, statePutSelectedElem, statePutSkemaDoc, stateGet ) 
         where
 \end{code}
 
@@ -63,13 +63,18 @@ runXS st (XS a) = runStateT a st
 \end{code}
 
 \begin{code}
-stateSetSelectedPos :: (Double,Double) -> XS ()
-stateSetSelectedPos pos = get >>= \s -> put $ s{ selectedPos = pos }
+statePutSelectedPos :: (Double,Double) -> XS ()
+statePutSelectedPos pos = get >>= \s -> put $ s{ selectedPos = pos }
 \end{code}
 
 \begin{code}
-stateSetSelectedElem :: SelectedElement -> XS ()
-stateSetSelectedElem se = get >>= \s -> put $ s{ selectedElem = se }
+statePutSelectedElem :: SelectedElement -> XS ()
+statePutSelectedElem se = get >>= \s -> put $ s{ selectedElem = se }
+\end{code}
+
+\begin{code}
+statePutSkemaDoc :: SkemaDoc -> XS ()
+statePutSkemaDoc sd = get >>= \s -> put $ s{ skemaDoc = sd }
 \end{code}
 
 \begin{code}

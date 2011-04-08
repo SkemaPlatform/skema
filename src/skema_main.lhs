@@ -38,8 +38,8 @@ import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
 import Skema
-    ( SkemaState(..), XS(..), io, runXS, get, put, trace
-    , stateSetSelectedPos, stateSetSelectedElem, stateGet )
+    ( SkemaState(..), XS(..), io, runXS, trace
+    , statePutSelectedPos, statePutSelectedElem, statePutSkemaDoc, stateGet )
 import Skema.SkemaDoc
     ( SkemaDoc(..), VisualNode(..), Position(..), SelectedElement(..)
     , nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
@@ -112,21 +112,20 @@ selectElement mx my canvas = do
   if null sels
     then do
       insertNewNode mx my
-      stateSetSelectedElem SE_NOTHING
+      statePutSelectedElem SE_NOTHING
       io $ widgetQueueDraw canvas
-    else stateSetSelectedElem (last sels)
-  stateSetSelectedPos (mx, my)
+    else statePutSelectedElem (last sels)
+  statePutSelectedPos (mx, my)
 \end{code}
 
 \begin{code}
 insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
-  state <- get
-  let old_doc = skemaDoc state
-      last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
+  old_doc <- stateGet skemaDoc
+  let last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
       new_node = VisualNode $ Position x y 
-  put $ state {
-            skemaDoc = old_doc { nodes = Map.insert last_i new_node (nodes old_doc)}}
+  statePutSkemaDoc $ old_doc { 
+                         nodes = Map.insert last_i new_node (nodes old_doc)}
 \end{code}
 
 \begin{code}
@@ -141,16 +140,14 @@ moveTo mx my canvas = do
 moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
 moveSelectedElement _ _ SE_NOTHING = return ()
 moveSelectedElement mx my (SE_NODE k) = do
-  state <- get
-  let my_doc = skemaDoc state
-      origen = selectedPos state
-      diffx = mx - fst origen
-      diffy = my - snd origen
-      new_nodes = Map.adjust (nodeTranslate diffx diffy) k (nodes my_doc)
-      new_doc = my_doc { nodes = new_nodes }
-      new_state = state { skemaDoc = new_doc, selectedPos = (mx,my) }
-  
-  put new_state
+  oldDoc <- stateGet skemaDoc
+  (ox,oy) <- stateGet selectedPos
+  let diffx = mx - ox
+      diffy = my - oy
+      new_nodes = Map.adjust (nodeTranslate diffx diffy) k (nodes oldDoc)
+
+  statePutSkemaDoc $ oldDoc { nodes = new_nodes }
+  statePutSelectedPos (mx,my)
 \end{code}
 
 \begin{code}
