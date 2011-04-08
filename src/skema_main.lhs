@@ -35,7 +35,9 @@ import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
 import Skema( SkemaState(..), XS(..), io, runXS, get, put )
-import Skema.SkemaDoc( SkemaDoc(..), VisualNode(..), Position(..) )
+import Skema.SkemaDoc
+    ( SkemaDoc(..), VisualNode(..), Position(..), currentHeight, currentWidth
+    , nodePointRad, nodeLineColor, nodeBoxColor, nodeHeadColor )
 import Skema.Util( deg2rad )
 \end{code}
 
@@ -150,9 +152,14 @@ drawVisualNode :: VisualNode -> Cr.Render ()
 drawVisualNode node = do
     let px = posx.position $ node
         py = posy.position $ node
-        wid = 60
-        hei = 80
+        wid = currentWidth node
+        hei = currentHeight node
         rad = 4
+        pointRad = nodePointRad node
+        (rline, gline, bline) = nodeLineColor node
+        (rbox, gbox, bbox) = nodeBoxColor node
+        (rhead, ghead,bhead) = nodeHeadColor node
+
     -- shadow 1
     Cr.newPath
     Cr.arc (px+wid) (py+2*rad) rad (deg2rad $ -90) (deg2rad 0)
@@ -180,10 +187,10 @@ drawVisualNode node = do
     Cr.arc (px+rad) (py+hei-rad) rad (deg2rad 90) (deg2rad 180)
     Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
     Cr.closePath
-    Cr.setSourceRGB 0.59 0.59 0.59
+    Cr.setSourceRGB rbox gbox bbox
     Cr.fillPreserve
     Cr.setLineWidth 1
-    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.setSourceRGB rline gline bline
     Cr.stroke
 
     -- header
@@ -193,27 +200,27 @@ drawVisualNode node = do
     Cr.lineTo px (py+12)
     Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
     Cr.closePath
-    Cr.setSourceRGB 0.51 0.51 0.56
+    Cr.setSourceRGB rhead ghead bhead
     Cr.fill
 
     -- in/out points
     Cr.setLineWidth 1
-    Cr.arc px (py+hei-20) rad (deg2rad 0) (deg2rad 360)
+    Cr.arc px (py+hei-20) pointRad (deg2rad 0) (deg2rad 360)
     Cr.setSourceRGB 0.78 0.78 0.16
     Cr.fillPreserve
-    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.setSourceRGB rline gline bline
     Cr.stroke
 
-    Cr.arc px (py+hei-30) rad (deg2rad 0) (deg2rad 360)
+    Cr.arc px (py+hei-30) pointRad (deg2rad 0) (deg2rad 360)
     Cr.setSourceRGB 0.78 0.78 0.16
     Cr.fillPreserve
-    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.setSourceRGB rline gline bline
     Cr.stroke
 
-    Cr.arc (px+wid) (py+20) rad (deg2rad 0) (deg2rad 360)
+    Cr.arc (px+wid) (py+20) pointRad (deg2rad 0) (deg2rad 360)
     Cr.setSourceRGB 0.16 0.78 0.78
     Cr.fillPreserve
-    Cr.setSourceRGB 0.15 0.15 0.15
+    Cr.setSourceRGB rline gline bline
     Cr.stroke
 
     Cr.setSourceRGB 1 1 1
