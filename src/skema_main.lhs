@@ -39,8 +39,7 @@ import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
 import Skema
     ( SkemaState(..), XS(..), io, runXS, get, put, trace
-    , stateSetSelectedPos, stateSetSelectedElem, stateGetSelectedElem
-    , stateGetDoc )
+    , stateSetSelectedPos, stateSetSelectedElem, stateGet )
 import Skema.SkemaDoc
     ( SkemaDoc(..), VisualNode(..), Position(..), SelectedElement(..)
     , nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
@@ -65,7 +64,7 @@ main= do
   widgetShowAll window 
 
   let st = SkemaState 
-           { doc = SkemaDoc (Map.singleton 0 (VisualNode $ Position 210 20))
+           { skemaDoc = SkemaDoc (Map.singleton 0 (VisualNode $ Position 210 20))
            , selectedPos = (0,0) 
            , selectedElem = SE_NOTHING }
 
@@ -108,15 +107,14 @@ main= do
 \begin{code}
 selectElement :: Double -> Double -> DrawingArea -> XS ()
 selectElement mx my canvas = do
-  stDoc <- stateGetDoc
+  stDoc <- stateGet skemaDoc
   let sels = filter isSelected . map (selectNode mx my) . Map.assocs.nodes $ stDoc
-  if (null sels) 
+  if null sels
     then do
       insertNewNode mx my
       stateSetSelectedElem SE_NOTHING
       io $ widgetQueueDraw canvas
-    else do
-      stateSetSelectedElem (last sels)
+    else stateSetSelectedElem (last sels)
   stateSetSelectedPos (mx, my)
 \end{code}
 
@@ -124,17 +122,17 @@ selectElement mx my canvas = do
 insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
   state <- get
-  let old_doc = doc state
+  let old_doc = skemaDoc state
       last_i = ((last.sort.Map.keys.nodes) old_doc) + 1
       new_node = VisualNode $ Position x y 
   put $ state {
-            doc = old_doc { nodes = Map.insert last_i new_node (nodes old_doc)}}
+            skemaDoc = old_doc { nodes = Map.insert last_i new_node (nodes old_doc)}}
 \end{code}
 
 \begin{code}
 moveTo :: Double -> Double -> DrawingArea -> XS ()
 moveTo mx my canvas = do
-  stElem <- stateGetSelectedElem
+  stElem <- stateGet selectedElem
   moveSelectedElement mx my stElem
   io $ widgetQueueDraw canvas
 \end{code}
@@ -144,13 +142,13 @@ moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
 moveSelectedElement _ _ SE_NOTHING = return ()
 moveSelectedElement mx my (SE_NODE k) = do
   state <- get
-  let my_doc = doc state
+  let my_doc = skemaDoc state
       origen = selectedPos state
-      diffx = mx - (fst origen)
-      diffy = my - (snd origen)
+      diffx = mx - fst origen
+      diffy = my - snd origen
       new_nodes = Map.adjust (nodeTranslate diffx diffy) k (nodes my_doc)
       new_doc = my_doc { nodes = new_nodes }
-      new_state = state { doc = new_doc, selectedPos = (mx,my) }
+      new_state = state { skemaDoc = new_doc, selectedPos = (mx,my) }
   
   put new_state
 \end{code}
@@ -159,7 +157,7 @@ moveSelectedElement mx my (SE_NODE k) = do
 drawCanvas :: DrawWindow -> XS ()
 drawCanvas canvas = do
   let drawable = castToDrawable canvas
-  stDoc <- stateGetDoc
+  stDoc <- stateGet skemaDoc
   (w,h) <- io $ drawableGetSize drawable
   io $ renderWithDrawable canvas (
                              myDraw 
@@ -196,8 +194,8 @@ drawVisualNode node = do
     Cr.newPath
     Cr.arc (px+wid) (py+2*rad) rad (deg2rad $ -90) (deg2rad 0)
     Cr.arc (px+wid) (py+hei) rad (deg2rad 0) (deg2rad 90)
-    Cr.arc (px) (py+hei) rad (deg2rad 90) (deg2rad 180)
-    Cr.arc (px) (py+2*rad) rad (deg2rad 180) (deg2rad $ -90)
+    Cr.arc px (py+hei) rad (deg2rad 90) (deg2rad 180)
+    Cr.arc px (py+2*rad) rad (deg2rad 180) (deg2rad $ -90)
     Cr.closePath
     Cr.setSourceRGBA 0 0 0 0.2
     Cr.fill

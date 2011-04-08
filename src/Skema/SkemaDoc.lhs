@@ -73,8 +73,8 @@ nodeMoveTo nx ny node = VisualNode (Position nx ny)
 nodeTranslate :: Double -> Double -> VisualNode -> VisualNode
 nodeTranslate dx dy node = VisualNode (Position nx ny)
     where
-      nx = (nodePosx node) + dx
-      ny = (nodePosy node) + dy
+      nx = nodePosx node + dx
+      ny = nodePosy node + dy
 \end{code}
 
 \begin{code}
@@ -105,7 +105,7 @@ data SelectedElement = SE_NOTHING
 \begin{code}
 selectNode :: Double -> Double -> (Int,VisualNode) -> SelectedElement
 selectNode mx my (k,node)
-    | inside mx my (Rect (nodePosx node) (nodePosy node) ((nodePosx node) + (nodeWidth node)) ((nodePosy node) + (nodeHeight node))) = SE_NODE k
+    | inside mx my (Rect (nodePosx node) (nodePosy node) (nodePosx node + nodeWidth node) (nodePosy node + nodeHeight node)) = SE_NODE k
     | otherwise = SE_NOTHING
 \end{code}
 

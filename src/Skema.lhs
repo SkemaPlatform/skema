@@ -18,13 +18,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Skema
     ( SkemaState(..), XS(..), io, runXS, get, put, trace, whenXS
-    , stateSetSelectedPos, stateSetSelectedElem, stateGetSelectedElem
-    , stateGetDoc ) 
+    , stateSetSelectedPos, stateSetSelectedElem, stateGet ) 
         where
 \end{code}
 
 \begin{code}
-import Control.Monad( when )
+import Control.Monad( when, liftM )
 import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
 import System.IO( hPutStrLn, stderr )
@@ -33,7 +32,7 @@ import Skema.SkemaDoc( SkemaDoc, SelectedElement )
 
 \begin{code}
 data SkemaState = SkemaState
-    { doc :: SkemaDoc
+    { skemaDoc :: SkemaDoc
     , selectedPos :: !(Double,Double)
     , selectedElem :: !SelectedElement }
 \end{code}
@@ -74,11 +73,6 @@ stateSetSelectedElem se = get >>= \s -> put $ s{ selectedElem = se }
 \end{code}
 
 \begin{code}
-stateGetDoc :: XS SkemaDoc
-stateGetDoc = get >>= \s -> return $ doc s
-\end{code}
-
-\begin{code}
-stateGetSelectedElem :: XS SelectedElement
-stateGetSelectedElem = get >>= \s -> return $ selectedElem s
+stateGet :: (SkemaState -> a) -> XS a
+stateGet f = liftM f get
 \end{code}

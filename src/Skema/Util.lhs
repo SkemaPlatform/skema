@@ -32,6 +32,6 @@ deg2rad d = d * (pi / 180)
 inside :: Double -> Double -> Rect -> Bool
 inside px py rect = inx && iny
     where
-      inx = (px >= (x0 rect)) && (px < (x1 rect))
-      iny = (py >= (y0 rect)) && (py < (y1 rect))
+      inx = (px >= x0 rect) && (px < x1 rect)
+      iny = (py >= y0 rect) && (py < y1 rect)
 \end{code}
