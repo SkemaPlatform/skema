@@ -38,7 +38,7 @@ import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
 import Skema
-    ( SkemaState(..), XS(..), io, runXS, get, put
+    ( SkemaState(..), XS(..), io, runXS, get, put, trace
     , stateSetSelectedPos, stateSetSelectedElem, stateGetSelectedElem
     , stateGetDoc )
 import Skema.SkemaDoc
@@ -90,11 +90,11 @@ main= do
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
          LeftButton <- eventButton
          (mx,my) <- eventCoordinates
-         liftIO $ putStrLn $ "release" ++ show (mx,my)
+         trace $ "release" ++ show (mx,my)
          
   _ <- canvas `on` leaveNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
-         liftIO $ putStrLn $ "out in" ++ show (mx,my)
+         trace $ "out in" ++ show (mx,my)
 
   _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
@@ -102,10 +102,6 @@ main= do
          (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
          liftIO $ putMVar state new_sks                    
         
-  _ <- canvas `on` buttonPressEvent $ tryEvent $ do
-         RightButton <- eventButton
-         liftIO $ putStrLn "boton derecho"
-
   mainGUI
 \end{code}
 
