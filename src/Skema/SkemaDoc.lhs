@@ -119,8 +119,13 @@ data SelectedElement = SE_NOTHING
 \begin{code}
 selectNode :: Double -> Double -> (Int,Node) -> SelectedElement
 selectNode mx my (k,node)
-    | inside mx my (Rect (nodePosx node) (nodePosy node) (nodePosx node + nodeWidth node) (nodePosy node + nodeHeight node)) = SE_NODE k
+    | inside mx my (Rect x0 y0 x1 y1) = SE_NODE k
     | otherwise = SE_NOTHING
+    where 
+      x0 = nodePosx node
+      y0 = nodePosy node
+      x1 = x0 + nodeWidth node
+      y1 = y0 + nodeHeight node
 \end{code}
 
 \begin{code}
