@@ -42,7 +42,7 @@ main= do
                         (M.fromList [(0,Kernel "Adder"),(1,Kernel "Scaler")])
                         (M.singleton 0 (NodeKernel (Position 210 20) 0))
            , selectedPos = (0,0) 
-           , selectedElem = SE_NOTHING }
+           , selectedElem = SeNOTHING }
 
   state <- newMVar st
 

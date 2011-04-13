@@ -93,7 +93,7 @@ selectElement mx my canvas = do
   if null sels
     then do
       insertNewNode mx my
-      statePutSelectedElem SE_NOTHING
+      statePutSelectedElem SeNOTHING
       io $ widgetQueueDraw canvas
     else statePutSelectedElem (last sels)
   statePutSelectedPos (mx, my)
@@ -103,7 +103,7 @@ selectElement mx my canvas = do
 insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
   old_doc <- stateGet skemaDoc
-  let last_i = ((last.sort.M.keys.nodes) old_doc) + 1
+  let last_i = (last.sort.M.keys.nodes) old_doc + 1
       new_node = NodeKernel (Position x y) 1
   statePutSkemaDoc $ old_doc { 
                          nodes = M.insert last_i new_node (nodes old_doc)}
@@ -119,8 +119,8 @@ moveTo mx my canvas = do
 
 \begin{code}
 moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
-moveSelectedElement _ _ SE_NOTHING = return ()
-moveSelectedElement mx my (SE_NODE k) = do
+moveSelectedElement _ _ SeNOTHING = return ()
+moveSelectedElement mx my (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
   (ox,oy) <- stateGet selectedPos
   let diffx = mx - ox

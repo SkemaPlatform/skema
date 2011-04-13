@@ -111,16 +111,16 @@ data Kernel = Kernel
 \end{code}
 
 \begin{code}
-data SelectedElement = SE_NOTHING
-                     | SE_NODE Int
+data SelectedElement = SeNOTHING
+                     | SeNODE Int
                        deriving( Show )
 \end{code}
 
 \begin{code}
 selectNode :: Double -> Double -> (Int,Node) -> SelectedElement
 selectNode mx my (k,node)
-    | inside mx my (Rect initx inity endx endy) = SE_NODE k
-    | otherwise = SE_NOTHING
+    | inside mx my (Rect initx inity endx endy) = SeNODE k
+    | otherwise = SeNOTHING
     where 
       initx = nodePosx node
       inity = nodePosy node
@@ -130,7 +130,7 @@ selectNode mx my (k,node)
 
 \begin{code}
 isSelected :: SelectedElement -> Bool
-isSelected SE_NOTHING = False
+isSelected SeNOTHING = False
 isSelected _ = True
 \end{code}
 
