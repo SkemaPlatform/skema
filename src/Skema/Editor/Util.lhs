@@ -16,14 +16,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 module Skema.Editor.Util
-    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn )
+    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
+    , calcFontHeight )
     where
 \end{code}
 
 \begin{code}
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, setSourceRGB, moveTo, newPath, closePath, arc, showText, stroke
-    , fill, fillPreserve )
+    , fill, fillPreserve, textExtents, textExtentsHeight )
 import Skema.Util( RGBColor, deg2rad )
 \end{code}
 
@@ -48,7 +49,7 @@ circlePath :: Double -- ^ x position
            -> Double -- ^ y position
            -> Double -- ^ radius
            -> Cr.Render ()
-circlePath px py rad = Cr.arc px py rad (deg2rad 0) (deg2rad 360)
+circlePath px py rad = Cr.newPath >> Cr.arc px py rad (deg2rad 0) (deg2rad 360)
 \end{code}
 
 \begin{code}
@@ -78,3 +79,9 @@ showTextOn :: Double -- ^ x position
 showTextOn px py text = Cr.moveTo px py >> Cr.showText text
 \end{code}
 
+\begin{code}
+calcFontHeight :: Cr.Render Double
+calcFontHeight = do
+  textSize <- Cr.textExtents "m"
+  return $ Cr.textExtentsHeight textSize
+\end{code}

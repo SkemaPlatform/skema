@@ -20,84 +20,113 @@ module Skema.Editor.Canvas( drawSkemaDoc ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import qualified Data.Map as M( elems )
+import Control.Monad( liftM )
+import qualified Data.IntMap as M( elems )
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA
     , setLineWidth, setFontSize, lineTo, newPath, closePath, arc
     , selectFontFace, fill, paint, textExtents, textExtentsWidth )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Node, nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad
-    , nodeHeadHeight, nodeLineColor, nodeBoxColor, nodeHeadColor, nodeName )
+    ( SkemaDoc(..), Node, nodePosx, nodePosy, nodeHeight, nodeWidth
+    , nodePointRad, nodeHeadHeight, nodeLineColor, nodeBoxColor, nodeHeadColor
+    , nodeInputColor, nodeOutputColor, nodeName, nodeInputs, nodeOutputs )
 import Skema.Util( deg2rad )
 import Skema.Editor.Util
-    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn)
+    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
+    , calcFontHeight )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 drawSkemaDoc :: Double -> Double -> SkemaDoc -> Cr.Render ()
 drawSkemaDoc _ _ skdoc = do
-    Cr.setSourceRGB 0.45 0.45 0.45
-    Cr.paint
+  Cr.setSourceRGB 0.45 0.45 0.45
+  Cr.paint
 
-    Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
+  Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
+  mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
 \end{code}
 
 \begin{code}
 drawVisualNode :: SkemaDoc -> Node -> Cr.Render ()
 drawVisualNode skdoc node = do
-    let px = nodePosx node
-        py = nodePosy node
-        wid = nodeWidth node
-        hei = nodeHeight node
-        headHeight = nodeHeadHeight node
-        rad = 4
-        sinc = 4
-        pointRad = nodePointRad node
-        linecolor = nodeLineColor node
+  let px = nodePosx node
+      py = nodePosy node
+      wid = nodeWidth node
+      hei = nodeHeight node
+      headHeight = nodeHeadHeight node
+      rad = 4
+      sinc = 4
+      linecolor = nodeLineColor node
 
-    Cr.setLineWidth 1
+  Cr.setLineWidth 1
 
-    -- shadow
-    Cr.setSourceRGBA 0 0 0 0.2
-    roundedRectanglePath (px-sinc) (py+sinc) (wid+sinc*2) hei rad
-    Cr.fill
-    roundedRectanglePath (px-sinc*0.5) (py+sinc*1.5) (wid+sinc) (hei-sinc) rad
-    Cr.fill
+  -- shadow
+  Cr.setSourceRGBA 0 0 0 0.2
+  roundedRectanglePath (px-sinc) (py+sinc) (wid+sinc*2) hei rad
+  Cr.fill
+  roundedRectanglePath (px-sinc*0.5) (py+sinc*1.5) (wid+sinc) (hei-sinc) rad
+  Cr.fill
 
-    -- box
-    roundedRectanglePath px py wid hei rad
-    drawFillStroke (nodeBoxColor node) linecolor
+  -- box
+  roundedRectanglePath px py wid hei rad
+  drawFillStroke (nodeBoxColor node) linecolor
 
-    -- header
-    Cr.newPath
-    Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.lineTo (px+wid) (py+headHeight)
-    Cr.lineTo px (py+headHeight)
-    Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
-    Cr.closePath
-    drawFill $ nodeHeadColor node
+  -- header
+  Cr.newPath
+  Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
+  Cr.lineTo (px+wid) (py+headHeight)
+  Cr.lineTo px (py+headHeight)
+  Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
+  Cr.closePath
+  drawFill $ nodeHeadColor node
 
-    -- in/out points
-    circlePath px (py+hei-20) pointRad
-    drawFillStroke (0.78,0.78,0.16) linecolor
+  Cr.setSourceRGB 1 1 1
+  Cr.setFontSize 10
+  showTextOn (px + 2) (py + 11) $ nodeName skdoc node
 
-    circlePath px (py+hei-30) pointRad
-    drawFillStroke (0.78,0.78,0.16) linecolor
+  -- in/out points
+  Cr.setFontSize 8
+  mapM_ (drawInputPoint node) (zip [0..] $ nodeInputs skdoc node)
+  mapM_ (drawOutputPoint node) (zip [0..] $ nodeOutputs skdoc node)
+\end{code}
 
-    circlePath (px+wid) (py+20) pointRad
-    drawFillStroke (0.16,0.78,0.78) linecolor
+\begin{code}
+drawInputPoint :: Node -> (Int, String) -> Cr.Render ()
+drawInputPoint node (ipos,inname) = do
+  let pos = fromIntegral ipos
+      hei = nodeHeight node
+      pointRad = nodePointRad node
+      px = nodePosx node
+      py = (nodePosy node) + hei - 10 - pos*2*(pointRad+1)
+      fillcolor = nodeInputColor node
+      linecolor = nodeLineColor node
 
-    Cr.setSourceRGB 1 1 1
-    Cr.setFontSize 10
-    showTextOn (px + 2) (py + 11) $ nodeName skdoc node
+  fontHeight <- calcFontHeight
 
-    Cr.setFontSize 8
-    showTextOn (px+6) (py+hei-18) "in x"
-    showTextOn (px+6) (py+hei-28) "in y"
-    textSize <- Cr.textExtents "out z"
-    showTextOn (px+wid-(Cr.textExtentsWidth textSize)-6) (py+22) "out z"
+  circlePath px py pointRad
+  drawFillStroke fillcolor linecolor
+  Cr.setSourceRGB 0.2 0.2 0.2
+  showTextOn (px+6) (py+fontHeight*0.5) inname
+\end{code}
+
+\begin{code}
+drawOutputPoint :: Node -> (Int, String) -> Cr.Render ()
+drawOutputPoint node (ipos,outname) = do
+  let pos = fromIntegral ipos
+      pointRad = nodePointRad node
+      px = (nodePosx node) + (nodeWidth node)
+      py = (nodePosy node) + (nodeHeadHeight node) + 10 + pos*2*(pointRad+1)
+      fillcolor = nodeOutputColor node
+      linecolor = nodeLineColor node
+
+  fontHeight <- calcFontHeight
+  textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents outname
+
+  circlePath px py pointRad
+  drawFillStroke fillcolor linecolor
+  Cr.setSourceRGB 0.2 0.2 0.2
+  showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) outname
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

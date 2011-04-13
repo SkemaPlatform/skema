@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Concurrent.MVar( newMVar )
-import qualified Data.Map as M( singleton, fromList )
+import qualified Data.IntMap as M( singleton, fromList )
 import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
@@ -25,6 +25,21 @@ import Skema( SkemaState(..) )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), Position(..), SelectedElement(..) )
 import Skema.Editor.MainWindow( prepareMainWindow )
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+testDoc :: SkemaDoc
+testDoc = SkemaDoc 
+          (M.fromList [(0,k1),(1,k2)])
+          (M.singleton 0 (NodeKernel (Position 210 20) 0))
+    where
+      k1 = Kernel "Adder" 
+           (M.fromList [(0,"x"),(1,"y")])
+           (M.fromList [(0,"z")])
+      k2 = Kernel "Scaler" 
+           (M.fromList [(0,"input")])
+           (M.fromList [(0,"x2"),(1,"x3")])
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,9 +53,7 @@ main= do
   _ <- onDestroy window mainQuit
  
   let st = SkemaState 
-           { skemaDoc = SkemaDoc 
-                        (M.fromList [(0,Kernel "Adder"),(1,Kernel "Scaler")])
-                        (M.singleton 0 (NodeKernel (Position 210 20) 0))
+           { skemaDoc = testDoc
            , selectedPos = (0,0) 
            , selectedElem = SeNOTHING }
 

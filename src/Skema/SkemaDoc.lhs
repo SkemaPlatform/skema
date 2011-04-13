@@ -19,7 +19,7 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
-import qualified Data.Map as M( Map, empty, lookup )
+import qualified Data.IntMap as M( IntMap, empty, lookup, elems )
 import Skema.Util( RGBColor, Rect(..), inside )
 \end{code}
 
@@ -27,6 +27,7 @@ import Skema.Util( RGBColor, Rect(..), inside )
 data Position = Position 
     { posx :: !Double
     , posy :: !Double }
+                deriving( Show )
 \end{code}
 
 \begin{code}
@@ -34,11 +35,26 @@ data Node = NodeKernel
     { position :: !Position
     , kernelIdx :: !Int }
     | NodeInt !Int
+            deriving( Show )
 \end{code}
 
 \begin{code}
 nodeName :: SkemaDoc -> Node -> String
 nodeName skdoc node = maybe "*noname*" name maybeKernel
+    where
+      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+nodeInputs :: SkemaDoc -> Node -> [String]
+nodeInputs skdoc node = maybe [] (M.elems.input) maybeKernel
+    where
+      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+nodeOutputs :: SkemaDoc -> Node -> [String]
+nodeOutputs skdoc node = maybe [] (M.elems.output) maybeKernel
     where
       maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
 \end{code}
@@ -102,8 +118,21 @@ nodeHeadColor = const (0.51,0.51,0.56)
 \end{code}
 
 \begin{code}
+nodeInputColor :: Node -> RGBColor
+nodeInputColor = const (0.78,0.78,0.16)
+\end{code}
+
+\begin{code}
+nodeOutputColor :: Node -> RGBColor
+nodeOutputColor = const (0.16,0.78,0.78)
+\end{code}
+
+\begin{code}
 data Kernel = Kernel
-    { name :: String }
+    { name :: String 
+    , input :: M.IntMap String
+    , output :: M.IntMap String }
+    deriving( Show )
 \end{code}
 
 \begin{code}
@@ -132,8 +161,8 @@ isSelected _ = True
 
 \begin{code}
 data SkemaDoc = SkemaDoc 
-    { library :: M.Map Int Kernel
-    , nodes :: M.Map Int Node }
+    { library :: M.IntMap Kernel
+    , nodes :: M.IntMap Node }
 \end{code}
 
 \begin{code}

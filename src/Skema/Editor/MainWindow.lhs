@@ -22,7 +22,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 \begin{code}
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
-import qualified Data.Map as M( assocs, adjust, keys, insert )
+import qualified Data.IntMap as M( assocs, adjust, keys, insert )
 import Data.List( sort )
 import Graphics.UI.Gtk
     ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
