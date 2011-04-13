@@ -18,7 +18,7 @@
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( newMVar, takeMVar, putMVar )
 import qualified Data.Map as Map
-    ( Map, singleton, elems, assocs, adjust, keys, insert, fromList )
+    ( singleton, assocs, adjust, keys, insert, fromList )
 import Data.List( sort )
 import Graphics.UI.Gtk
     ( on, mainQuit, initGUI, mainGUI, onDestroy
@@ -35,19 +35,17 @@ import Graphics.UI.Gtk.Gdk.EventM
     , MouseButton(..), Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
-import qualified Graphics.Rendering.Cairo as Cr
 import Paths_skema( getDataFileName )
 import Skema
     ( SkemaState(..), XS(..), io, runXS, trace
     , statePutSelectedPos, statePutSelectedElem, statePutSkemaDoc, stateGet )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), Position(..), SelectedElement(..)
-    , nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
-    , nodeTranslate, nodeLineColor, nodeBoxColor, nodeHeadColor, nodeName
-    , selectNode, isSelected )
-import Skema.Util( deg2rad )
+    , nodeTranslate, selectNode, isSelected )
+import Skema.Editor.Canvas( drawSkemaDoc )
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 main :: IO ()
 main= do
@@ -159,112 +157,10 @@ drawCanvas canvas = do
   stDoc <- stateGet skemaDoc
   (w,h) <- io $ drawableGetSize drawable
   io $ renderWithDrawable canvas (
-                             myDraw 
+                             drawSkemaDoc
                              (fromIntegral w) 
                              (fromIntegral h) 
                              stDoc)
 \end{code}
 
-\begin{code}
-myDraw :: Double -> Double -> SkemaDoc -> Cr.Render ()
-myDraw _ _ skdoc = do
-    Cr.setSourceRGB 0.45 0.45 0.45
-    Cr.paint
-
-    Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
-    mapM_ (drawVisualNode skdoc) (Map.elems.nodes $ skdoc)
-\end{code}
-
-\begin{code}
-drawVisualNode :: SkemaDoc -> Node -> Cr.Render ()
-drawVisualNode skdoc node = do
-    let px = nodePosx node
-        py = nodePosy node
-        wid = nodeWidth node
-        hei = nodeHeight node
-        headHeight = nodeHeadHeight node
-        name = nodeName skdoc node
-        rad = 4
-        pointRad = nodePointRad node
-        (rline, gline, bline) = nodeLineColor node
-        (rbox, gbox, bbox) = nodeBoxColor node
-        (rhead, ghead,bhead) = nodeHeadColor node
-
-    -- shadow 1
-    Cr.newPath
-    Cr.arc (px+wid) (py+2*rad) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.arc (px+wid) (py+hei) rad (deg2rad 0) (deg2rad 90)
-    Cr.arc px (py+hei) rad (deg2rad 90) (deg2rad 180)
-    Cr.arc px (py+2*rad) rad (deg2rad 180) (deg2rad $ -90)
-    Cr.closePath
-    Cr.setSourceRGBA 0 0 0 0.2
-    Cr.fill
-
-    -- shadow 2
-    Cr.newPath
-    Cr.arc (px+wid-2) (py+2*rad+2) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.arc (px+wid-2) (py+hei-2) rad (deg2rad 0) (deg2rad 90)
-    Cr.arc (px+2) (py+hei-2) rad (deg2rad 90) (deg2rad 180)
-    Cr.arc (px+2) (py+2*rad+2) rad (deg2rad 180) (deg2rad $ -90)
-    Cr.closePath
-    Cr.setSourceRGBA 0 0 0 0.2
-    Cr.fill
-
-    -- box
-    Cr.newPath
-    Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.arc (px+wid-rad) (py+hei-rad) rad (deg2rad 0) (deg2rad 90)
-    Cr.arc (px+rad) (py+hei-rad) rad (deg2rad 90) (deg2rad 180)
-    Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
-    Cr.closePath
-    Cr.setSourceRGB rbox gbox bbox
-    Cr.fillPreserve
-    Cr.setLineWidth 1
-    Cr.setSourceRGB rline gline bline
-    Cr.stroke
-
-    -- header
-    Cr.newPath
-    Cr.arc (px+wid-rad) (py+rad) rad (deg2rad $ -90) (deg2rad 0)
-    Cr.lineTo (px+wid) (py+headHeight)
-    Cr.lineTo px (py+headHeight)
-    Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
-    Cr.closePath
-    Cr.setSourceRGB rhead ghead bhead
-    Cr.fill
-
-    -- in/out points
-    Cr.setLineWidth 1
-    Cr.arc px (py+hei-20) pointRad (deg2rad 0) (deg2rad 360)
-    Cr.setSourceRGB 0.78 0.78 0.16
-    Cr.fillPreserve
-    Cr.setSourceRGB rline gline bline
-    Cr.stroke
-
-    Cr.arc px (py+hei-30) pointRad (deg2rad 0) (deg2rad 360)
-    Cr.setSourceRGB 0.78 0.78 0.16
-    Cr.fillPreserve
-    Cr.setSourceRGB rline gline bline
-    Cr.stroke
-
-    Cr.arc (px+wid) (py+20) pointRad (deg2rad 0) (deg2rad 360)
-    Cr.setSourceRGB 0.16 0.78 0.78
-    Cr.fillPreserve
-    Cr.setSourceRGB rline gline bline
-    Cr.stroke
-
-    Cr.setSourceRGB 1 1 1
-    Cr.setFontSize 10
-    Cr.moveTo (px + 2) (py + 11)
-    Cr.showText name
-
-    Cr.setSourceRGB 1 1 1
-    Cr.setFontSize 8
-    Cr.moveTo (px+6) (py+hei-18)
-    Cr.showText "in x"
-    Cr.moveTo (px+6) (py+hei-28)
-    Cr.showText "in y"
-    textSize <- Cr.textExtents "out z"
-    Cr.moveTo (px+wid-(Cr.textExtentsWidth textSize)-6) (py+22)
-    Cr.showText "out z"
-\end{code}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

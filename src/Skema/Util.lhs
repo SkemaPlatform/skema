@@ -24,11 +24,13 @@ data Rect = Rect
 \end{code}
 
 \begin{code}
+-- | 'deg2rad' converts an arc measure from degree units to radian units
 deg2rad :: (Floating a) => a -> a
 deg2rad d = d * (pi / 180)
 \end{code}
 
 \begin{code}
+-- | Check if a point is inside a rectangular region.
 inside :: Double -> Double -> Rect -> Bool
 inside px py rect = inx && iny
     where

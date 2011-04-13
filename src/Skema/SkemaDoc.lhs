@@ -19,7 +19,7 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
-import qualified Data.Map as Map( Map, empty, lookup )
+import qualified Data.Map as M( Map, empty, lookup )
 import Skema.Util( Rect(..), inside )
 \end{code}
 
@@ -40,7 +40,7 @@ data Node = NodeKernel
 nodeName :: SkemaDoc -> Node -> String
 nodeName skdoc node = maybe "*noname*" name maybeKernel
     where
-      maybeKernel = Map.lookup (kernelIdx node) (library skdoc) 
+      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
@@ -119,13 +119,13 @@ data SelectedElement = SE_NOTHING
 \begin{code}
 selectNode :: Double -> Double -> (Int,Node) -> SelectedElement
 selectNode mx my (k,node)
-    | inside mx my (Rect x0 y0 x1 y1) = SE_NODE k
+    | inside mx my (Rect initx inity endx endy) = SE_NODE k
     | otherwise = SE_NOTHING
     where 
-      x0 = nodePosx node
-      y0 = nodePosy node
-      x1 = x0 + nodeWidth node
-      y1 = y0 + nodeHeight node
+      initx = nodePosx node
+      inity = nodePosy node
+      endx = initx + nodeWidth node
+      endy = inity + nodeHeight node
 \end{code}
 
 \begin{code}
@@ -136,10 +136,11 @@ isSelected _ = True
 
 \begin{code}
 data SkemaDoc = SkemaDoc 
-    { library :: Map.Map Int Kernel
-    , nodes :: Map.Map Int Node }
+    { library :: M.Map Int Kernel
+    , nodes :: M.Map Int Node }
 \end{code}
 
 \begin{code}
-emptySkemaDoc = SkemaDoc Map.empty Map.empty
+emptySkemaDoc :: SkemaDoc
+emptySkemaDoc = SkemaDoc M.empty M.empty
 \end{code}
