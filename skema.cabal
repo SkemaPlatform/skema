@@ -21,6 +21,7 @@ Library
     Skema.Block.Function
     Skema.Editor.Canvas
     Skema.Editor.MainWindow
+    Skema.Editor.Util
 
 Executable skema
   hs-source-dirs:  src
