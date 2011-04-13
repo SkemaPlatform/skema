@@ -14,12 +14,13 @@ Library
   hs-source-dirs:  src
   ghc-options:     -Wall
   Build-Depends:   base>=4, mtl>=2.0, transformers>=0.2, containers>=0.3, 
-                   cairo>=0.10
+                   cairo>=0.10, gtk>=0.10, glade>=0.10
   Exposed-modules: 
     Skema
     Skema.SkemaDoc
     Skema.Block.Function
     Skema.Editor.Canvas
+    Skema.Editor.MainWindow
 
 Executable skema
   hs-source-dirs:  src
