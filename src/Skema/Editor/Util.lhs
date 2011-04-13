@@ -16,8 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 module Skema.Editor.Util
-    ( RGBColor, roundedRectanglePath, circlePath, drawFill, drawFillStroke
-    , showTextOn )
+    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn )
     where
 \end{code}
 
@@ -25,11 +24,7 @@ module Skema.Editor.Util
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, setSourceRGB, moveTo, newPath, closePath, arc, showText, stroke
     , fill, fillPreserve )
-import Skema.Util( deg2rad )
-\end{code}
-
-\begin{code}
-type RGBColor = (Double,Double,Double)
+import Skema.Util( RGBColor, deg2rad )
 \end{code}
 
 \begin{code}

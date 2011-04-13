@@ -15,7 +15,11 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Util( Rect(..), deg2rad, inside ) where
+module Skema.Util( RGBColor, Rect(..), deg2rad, inside ) where
+\end{code}
+
+\begin{code}
+type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}

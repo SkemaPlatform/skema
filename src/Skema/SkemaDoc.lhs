@@ -20,7 +20,7 @@ module Skema.SkemaDoc where
 
 \begin{code}
 import qualified Data.Map as M( Map, empty, lookup )
-import Skema.Util( Rect(..), inside )
+import Skema.Util( RGBColor, Rect(..), inside )
 \end{code}
 
 \begin{code}
@@ -84,10 +84,6 @@ nodeTranslate dx dy node = node { position = Position nx ny }
     where
       nx = nodePosx node + dx
       ny = nodePosy node + dy
-\end{code}
-
-\begin{code}
-type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}
