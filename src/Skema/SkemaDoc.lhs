@@ -20,9 +20,10 @@ module Skema.SkemaDoc where
 
 \begin{code}
 import Data.Maybe( fromJust, isJust )
+import Data.List( partition )
 import Control.Monad( mplus, msum )
 import qualified Data.IntMap as M( IntMap, empty, lookup, elems, assocs )
-import Skema.Util( RGBColor, Rect(..), inside )
+import Skema.Util( RGBColor, Rect(..), Circle(..), inside )
 \end{code}
 
 \begin{code}
@@ -144,8 +145,8 @@ data SelectedElement = SeNODE !Int
 
 \begin{code}
 selectNodeElement :: Double -> Double -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
-selectNodeElement mx my (k,node,kernel)
---    | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)
+selectNodeElement mx my (k,node,maybeKernel)
+    | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)
     | isFullSelected && isBodySelected = Just $ SeNODE k
     | otherwise = Nothing
     where 
@@ -156,25 +157,26 @@ selectNodeElement mx my (k,node,kernel)
       endy = inity + nodeHeight node
       isFullSelected = inside mx my (Rect (initx-rad) inity (endx+2*rad) endy)
       isBodySelected = (mx >= initx) && (mx < endx) 
-      pointSelected =  selectIOPoint mx my (node,kernel)
+      pointSelected =  selectPoints mx my node points
+      points = maybe [] (M.assocs.iopoints) maybeKernel
 \end{code}
 
 \begin{code}
-selectIOPoint :: Double -> Double -> (Node,Maybe Kernel) -> Maybe IOPoint
-selectIOPoint _ _ (_,Nothing) = Nothing
---selectIOPoint mx my (node,Just kernel) = ipoint `mplus` opoint
---    where
---      ipoint = msum [selectPoints mx my node (M.assocs.iopoints $ kernel)]
+selectPoints :: Double -> Double -> Node -> [(Int,IOPoint)] -> Maybe Int
+selectPoints mx my node xs = msum . map (selectPoint mx my node) $ ys
+    where
+      (ins,outs) = partition (isInputPoint.snd) xs
+      ys = (zip [0..] ins) ++ (zip [0..] outs)
 \end{code}
 
 \begin{code}
-selectPoints :: Double -> Double -> Node -> [(Int,String)] -> Maybe IOPoint
-selectPoints _ _ _ _ = msum [Nothing]
-\end{code}
-
-\begin{code}
-selectPoint :: Double -> Double -> Node -> [(Int,String)] -> Maybe IOPoint
-selectPoint _ _ _ _ = msum [Nothing]
+selectPoint :: Double -> Double -> Node -> (Int,(Int,IOPoint)) -> Maybe Int
+selectPoint mx my node (idx,(j,point))
+    | inside mx my (Circle cx cy rad) = Just j
+    | otherwise = Nothing
+    where
+      (cx,cy) = nodeIOPPosition node point idx
+      rad = nodePointRad node
 \end{code}
 
 \begin{code}
@@ -215,4 +217,9 @@ nodeOutputPoints skdoc = filter (not.isInputPoint) . nodeIOPoints skdoc
 \begin{code}
 nodeKernel :: SkemaDoc -> Node -> Maybe Kernel
 nodeKernel skdoc node = M.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+selectedPosition :: SkemaDoc -> SelectedElement -> Position
+selectedPosition _ _ = Position 0 0
 \end{code}

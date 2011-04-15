@@ -40,11 +40,12 @@ import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
-    , statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement )
+    , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
+    , stateGet, stateSelectElement )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Position(..), SelectedElement(..)
     , nodeTranslate )
-import Skema.Editor.Canvas( drawSkemaDoc )
+import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,7 +73,10 @@ prepareMainWindow xml state = do
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
          LeftButton <- eventButton
          (mx,my) <- eventCoordinates
-         trace $ "release" ++ show (mx,my)
+         sks <- liftIO $ takeMVar state
+         (_,new_sks) <- liftIO $ runXS sks $ releaseElement mx my 
+         liftIO $ putMVar state new_sks
+         liftIO $ widgetQueueDraw canvas
          
   _ <- canvas `on` leaveNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
@@ -128,7 +132,14 @@ moveSelectedElement mx my (SeNODE k) = do
 
   statePutSkemaDoc $ oldDoc { nodes = new_nodes }
   statePutSelectedPos (mx,my)
-moveSelectedElement _ _ _ = trace "otro"
+moveSelectedElement mx my (SeIOP k j) = do
+  statePutSelectedPos2 (mx,my)
+\end{code}
+
+\begin{code}
+releaseElement :: Double -> Double -> XS ()
+releaseElement _ _ = do
+  statePutSelectedElem Nothing
 \end{code}
 
 \begin{code}
@@ -142,6 +153,18 @@ drawCanvas canvas = do
                                   (fromIntegral w) 
                                   (fromIntegral h) 
                                   stDoc)
+     
+  stElem <- stateGet selectedElem
+  (ox,oy) <- stateGet selectedPos
+  (mx,my) <- stateGet selectedPos2
+  io $ renderWithDrawable canvas (
+                                  drawSelected
+                                  (fromIntegral w) 
+                                  (fromIntegral h)
+                                  stElem
+                                  ox oy
+                                  mx my
+                                 )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

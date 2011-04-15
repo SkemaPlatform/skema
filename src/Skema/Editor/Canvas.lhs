@@ -15,7 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Editor.Canvas( drawSkemaDoc ) where
+module Skema.Editor.Canvas( drawSkemaDoc, drawSelected ) where
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,11 +24,11 @@ import Control.Monad( liftM )
 import qualified Data.IntMap as M( elems )
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA
-    , setLineWidth, setFontSize, lineTo, newPath, closePath, arc
+    , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo, stroke
     , selectFontFace, fill, paint, textExtents, textExtentsWidth )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Node, IOPoint, nodePosx, nodePosy, nodeHeight, nodeWidth
-    , nodePointRad, nodeHeadHeight, nodeHeadColor
+    ( SkemaDoc(..), Node, IOPoint, SelectedElement(..), nodePosx, nodePosy
+    , nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight, nodeHeadColor
     , nodeName, nodeInputPoints, nodeOutputPoints, nodeIOPPosition
     , isInputPoint, iopName )
 import Skema.Util( deg2rad, RGBColor )
@@ -126,6 +126,20 @@ drawIOPoint node (ipos,point) = do
     else do
       textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents name
       showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) name
+\end{code}
+
+\begin{code}
+drawSelected :: Double -> Double -> Maybe SelectedElement -> Double -> Double -> Double -> Double -> Cr.Render ()
+drawSelected _ _ Nothing _ _ _ _ = return ()
+drawSelected _ _ (Just (SeIOP _ _)) ox oy mx my = do
+  Cr.newPath
+  Cr.moveTo ox oy
+  Cr.lineTo mx my
+  Cr.closePath
+  Cr.setLineWidth 1
+  Cr.setSourceRGB 1 1 1
+  Cr.stroke
+drawSelected _ _ _ ox oy mx my = return ()
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
