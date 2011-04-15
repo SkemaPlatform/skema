@@ -27,13 +27,30 @@ import qualified Graphics.Rendering.Cairo as Cr
     , setLineWidth, setFontSize, lineTo, newPath, closePath, arc
     , selectFontFace, fill, paint, textExtents, textExtentsWidth )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Node, nodePosx, nodePosy, nodeHeight, nodeWidth
-    , nodePointRad, nodeHeadHeight, nodeLineColor, nodeBoxColor, nodeHeadColor
-    , nodeInputColor, nodeOutputColor, nodeName, nodeInputs, nodeOutputs )
-import Skema.Util( deg2rad )
+    ( SkemaDoc(..), Node, IOPoint, nodePosx, nodePosy, nodeHeight, nodeWidth
+    , nodePointRad, nodeHeadHeight, nodeHeadColor
+    , nodeName, nodeInputPoints, nodeOutputPoints, nodeIOPPosition
+    , isInputPoint, iopName )
+import Skema.Util( deg2rad, RGBColor )
 import Skema.Editor.Util
     ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
     , calcFontHeight )
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+class ElemColor a where
+    lineColor :: a -> RGBColor
+    lineColor = const (0.15,0.15,0.15)
+    fillColor :: a -> RGBColor
+
+instance ElemColor Node where
+    fillColor = const (0.59,0.59,0.59)
+
+instance ElemColor IOPoint where
+    fillColor point
+        | isInputPoint point = (0.78,0.78,0.16)
+        | otherwise = (0.16,0.78,0.78)
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,7 +74,7 @@ drawVisualNode skdoc node = do
       headHeight = nodeHeadHeight node
       rad = 4
       sinc = 4
-      linecolor = nodeLineColor node
+      linecolor = lineColor node
 
   Cr.setLineWidth 1
 
@@ -70,7 +87,7 @@ drawVisualNode skdoc node = do
 
   -- box
   roundedRectanglePath px py wid hei rad
-  drawFillStroke (nodeBoxColor node) linecolor
+  drawFillStroke (fillColor node) linecolor
 
   -- header
   Cr.newPath
@@ -87,46 +104,28 @@ drawVisualNode skdoc node = do
 
   -- in/out points
   Cr.setFontSize 8
-  mapM_ (drawInputPoint node) (zip [0..] $ nodeInputs skdoc node)
-  mapM_ (drawOutputPoint node) (zip [0..] $ nodeOutputs skdoc node)
+  mapM_ (drawIOPoint node) (zip [0..] $ nodeInputPoints skdoc node)
+  mapM_ (drawIOPoint node) (zip [0..] $ nodeOutputPoints skdoc node)
 \end{code}
 
 \begin{code}
-drawInputPoint :: Node -> (Int, String) -> Cr.Render ()
-drawInputPoint node (ipos,inname) = do
-  let pos = fromIntegral ipos
-      hei = nodeHeight node
-      pointRad = nodePointRad node
-      px = nodePosx node
-      py = (nodePosy node) + hei - 10 - pos*2*(pointRad+1)
-      fillcolor = nodeInputColor node
-      linecolor = nodeLineColor node
+drawIOPoint :: Node -> (Int, IOPoint) -> Cr.Render ()
+drawIOPoint node (ipos,point) = do
+  let pointRad = nodePointRad node
+      (px,py) = nodeIOPPosition node point ipos
+      name = iopName point
 
   fontHeight <- calcFontHeight
 
   circlePath px py pointRad
-  drawFillStroke fillcolor linecolor
+  drawFillStroke (fillColor point) (lineColor point)
   Cr.setSourceRGB 0.2 0.2 0.2
-  showTextOn (px+6) (py+fontHeight*0.5) inname
-\end{code}
-
-\begin{code}
-drawOutputPoint :: Node -> (Int, String) -> Cr.Render ()
-drawOutputPoint node (ipos,outname) = do
-  let pos = fromIntegral ipos
-      pointRad = nodePointRad node
-      px = (nodePosx node) + (nodeWidth node)
-      py = (nodePosy node) + (nodeHeadHeight node) + 10 + pos*2*(pointRad+1)
-      fillcolor = nodeOutputColor node
-      linecolor = nodeLineColor node
-
-  fontHeight <- calcFontHeight
-  textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents outname
-
-  circlePath px py pointRad
-  drawFillStroke fillcolor linecolor
-  Cr.setSourceRGB 0.2 0.2 0.2
-  showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) outname
+  if (isInputPoint point)
+    then do
+      showTextOn (px+6) (py+fontHeight*0.5) name
+    else do
+      textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents name
+      showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) name
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

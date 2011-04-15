@@ -19,7 +19,9 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
-import qualified Data.IntMap as M( IntMap, empty, lookup, elems )
+import Data.Maybe( fromJust, isJust )
+import Control.Monad( mplus, msum )
+import qualified Data.IntMap as M( IntMap, empty, lookup, elems, assocs )
 import Skema.Util( RGBColor, Rect(..), inside )
 \end{code}
 
@@ -36,27 +38,6 @@ data Node = NodeKernel
     , kernelIdx :: !Int }
     | NodeInt !Int
             deriving( Show )
-\end{code}
-
-\begin{code}
-nodeName :: SkemaDoc -> Node -> String
-nodeName skdoc node = maybe "*noname*" name maybeKernel
-    where
-      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
-\end{code}
-
-\begin{code}
-nodeInputs :: SkemaDoc -> Node -> [String]
-nodeInputs skdoc node = maybe [] (M.elems.input) maybeKernel
-    where
-      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
-\end{code}
-
-\begin{code}
-nodeOutputs :: SkemaDoc -> Node -> [String]
-nodeOutputs skdoc node = maybe [] (M.elems.output) maybeKernel
-    where
-      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
@@ -85,6 +66,31 @@ nodeWidth = const 60
 \end{code}
 
 \begin{code}
+nodeIOPPosition :: Node -> IOPoint -> Int -> (Double,Double)
+nodeIOPPosition node point idx
+    | isInputPoint point = nodeInputPosition node idx
+    | otherwise = nodeOutputPosition node idx
+\end{code}
+
+\begin{code}
+nodeInputPosition :: Node -> Int -> (Double, Double)
+nodeInputPosition node idx = (px,py)
+    where
+      idxOffset = (fromIntegral idx)*2*(nodePointRad node + 1)
+      px = nodePosx node
+      py = (nodePosy node) + (nodeHeight node) - 10 - idxOffset
+\end{code}
+
+\begin{code}
+nodeOutputPosition :: Node -> Int -> (Double, Double)
+nodeOutputPosition node idx = (px,py)
+    where
+      idxOffset = (fromIntegral idx)*2*(nodePointRad node + 1)
+      px = (nodePosx node) + (nodeWidth node)
+      py = (nodePosy node) + (nodeHeadHeight node) + 10 + idxOffset
+\end{code}
+
+\begin{code}
 nodeHeadHeight :: Node -> Double
 nodeHeadHeight = const 12
 \end{code}
@@ -103,60 +109,72 @@ nodeTranslate dx dy node = node { position = Position nx ny }
 \end{code}
 
 \begin{code}
-nodeLineColor :: Node -> RGBColor
-nodeLineColor = const (0.15,0.15,0.15)
-\end{code}
-
-\begin{code}
-nodeBoxColor :: Node -> RGBColor
-nodeBoxColor = const (0.59,0.59,0.59)
-\end{code}
-
-\begin{code}
 nodeHeadColor :: Node -> RGBColor
 nodeHeadColor = const (0.51,0.51,0.56)
 \end{code}
 
 \begin{code}
-nodeInputColor :: Node -> RGBColor
-nodeInputColor = const (0.78,0.78,0.16)
+data IOPointType = InputPoint
+                 | OutputPoint
+                   deriving( Show, Eq )
+
+data IOPoint = IOPoint
+    { iopName :: !String 
+    , iopType :: !IOPointType }
+    deriving( Show )
 \end{code}
 
 \begin{code}
-nodeOutputColor :: Node -> RGBColor
-nodeOutputColor = const (0.16,0.78,0.78)
+isInputPoint :: IOPoint -> Bool
+isInputPoint = (==InputPoint) . iopType
 \end{code}
 
 \begin{code}
 data Kernel = Kernel
     { name :: String 
-    , input :: M.IntMap String
-    , output :: M.IntMap String }
+    , iopoints :: M.IntMap IOPoint }
     deriving( Show )
 \end{code}
 
 \begin{code}
-data SelectedElement = SeNOTHING
-                     | SeNODE Int
-                       deriving( Show )
+data SelectedElement = SeNODE !Int
+                     | SeIOP !Int !Int
+                       deriving( Show, Eq )
 \end{code}
 
 \begin{code}
-selectNode :: Double -> Double -> (Int,Node) -> SelectedElement
-selectNode mx my (k,node)
-    | inside mx my (Rect initx inity endx endy) = SeNODE k
-    | otherwise = SeNOTHING
+selectNodeElement :: Double -> Double -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
+selectNodeElement mx my (k,node,kernel)
+--    | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)
+    | isFullSelected && isBodySelected = Just $ SeNODE k
+    | otherwise = Nothing
     where 
+      rad = nodePointRad node
       initx = nodePosx node
       inity = nodePosy node
       endx = initx + nodeWidth node
       endy = inity + nodeHeight node
+      isFullSelected = inside mx my (Rect (initx-rad) inity (endx+2*rad) endy)
+      isBodySelected = (mx >= initx) && (mx < endx) 
+      pointSelected =  selectIOPoint mx my (node,kernel)
 \end{code}
 
 \begin{code}
-isSelected :: SelectedElement -> Bool
-isSelected SeNOTHING = False
-isSelected _ = True
+selectIOPoint :: Double -> Double -> (Node,Maybe Kernel) -> Maybe IOPoint
+selectIOPoint _ _ (_,Nothing) = Nothing
+--selectIOPoint mx my (node,Just kernel) = ipoint `mplus` opoint
+--    where
+--      ipoint = msum [selectPoints mx my node (M.assocs.iopoints $ kernel)]
+\end{code}
+
+\begin{code}
+selectPoints :: Double -> Double -> Node -> [(Int,String)] -> Maybe IOPoint
+selectPoints _ _ _ _ = msum [Nothing]
+\end{code}
+
+\begin{code}
+selectPoint :: Double -> Double -> Node -> [(Int,String)] -> Maybe IOPoint
+selectPoint _ _ _ _ = msum [Nothing]
 \end{code}
 
 \begin{code}
@@ -168,4 +186,33 @@ data SkemaDoc = SkemaDoc
 \begin{code}
 emptySkemaDoc :: SkemaDoc
 emptySkemaDoc = SkemaDoc M.empty M.empty
+\end{code}
+
+\begin{code}
+nodeName :: SkemaDoc -> Node -> String
+nodeName skdoc node = maybe "*noname*" name maybeKernel
+    where
+      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+nodeIOPoints :: SkemaDoc -> Node -> [IOPoint]
+nodeIOPoints skdoc node = maybe [] (M.elems.iopoints) maybeKernel
+    where
+      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+\end{code}
+
+\begin{code}
+nodeInputPoints :: SkemaDoc -> Node -> [IOPoint]
+nodeInputPoints skdoc = filter isInputPoint . nodeIOPoints skdoc
+\end{code}
+
+\begin{code}
+nodeOutputPoints :: SkemaDoc -> Node -> [IOPoint]
+nodeOutputPoints skdoc = filter (not.isInputPoint) . nodeIOPoints skdoc
+\end{code}
+
+\begin{code}
+nodeKernel :: SkemaDoc -> Node -> Maybe Kernel
+nodeKernel skdoc node = M.lookup (kernelIdx node) (library skdoc) 
 \end{code}

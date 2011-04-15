@@ -20,10 +20,12 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
-import qualified Data.IntMap as M( assocs, adjust, keys, insert )
+import qualified Data.IntMap as M( adjust, keys, insert )
 import Data.List( sort )
+import Data.Maybe( isNothing, isJust, fromJust )
 import Graphics.UI.Gtk
     ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
     , DrawWindow, DrawingArea )
@@ -36,12 +38,12 @@ import Graphics.UI.Gtk.Gdk.EventM
     , MouseButton(..), Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
-import Skema
+import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
-    , statePutSelectedElem, statePutSkemaDoc, stateGet )
+    , statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Position(..), SelectedElement(..)
-    , nodeTranslate, selectNode, isSelected )
+    , nodeTranslate )
 import Skema.Editor.Canvas( drawSkemaDoc )
 \end{code}
 
@@ -88,14 +90,11 @@ prepareMainWindow xml state = do
 \begin{code}
 selectElement :: Double -> Double -> DrawingArea -> XS ()
 selectElement mx my canvas = do
-  stDoc <- stateGet skemaDoc
-  let sels = filter isSelected . map (selectNode mx my) . M.assocs.nodes $ stDoc
-  if null sels
-    then do
-      insertNewNode mx my
-      statePutSelectedElem SeNOTHING
-      io $ widgetQueueDraw canvas
-    else statePutSelectedElem (last sels)
+  selElement <- stateSelectElement mx my
+  when (isNothing selElement) $ do
+                               insertNewNode mx my
+                               io $ widgetQueueDraw canvas
+  statePutSelectedElem selElement
   statePutSelectedPos (mx, my)
 \end{code}
 
@@ -113,13 +112,13 @@ insertNewNode x y = do
 moveTo :: Double -> Double -> DrawingArea -> XS ()
 moveTo mx my canvas = do
   stElem <- stateGet selectedElem
-  moveSelectedElement mx my stElem
-  io $ widgetQueueDraw canvas
+  when (isJust stElem) $ do
+                        moveSelectedElement mx my (fromJust stElem)
+                        io $ widgetQueueDraw canvas
 \end{code}
 
 \begin{code}
 moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
-moveSelectedElement _ _ SeNOTHING = return ()
 moveSelectedElement mx my (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
   (ox,oy) <- stateGet selectedPos
@@ -129,6 +128,7 @@ moveSelectedElement mx my (SeNODE k) = do
 
   statePutSkemaDoc $ oldDoc { nodes = new_nodes }
   statePutSelectedPos (mx,my)
+moveSelectedElement _ _ _ = trace "otro"
 \end{code}
 
 \begin{code}
@@ -138,10 +138,10 @@ drawCanvas canvas = do
   stDoc <- stateGet skemaDoc
   (w,h) <- io $ drawableGetSize drawable
   io $ renderWithDrawable canvas (
-                             drawSkemaDoc
-                             (fromIntegral w) 
-                             (fromIntegral h) 
-                             stDoc)
+                                  drawSkemaDoc
+                                  (fromIntegral w) 
+                                  (fromIntegral h) 
+                                  stDoc)
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

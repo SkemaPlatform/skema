@@ -21,9 +21,10 @@ import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Paths_skema( getDataFileName )
-import Skema( SkemaState(..) )
+import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Kernel(..), Node(..), Position(..), SelectedElement(..) )
+    ( SkemaDoc(..), Kernel(..), Node(..), Position(..), IOPoint(..)
+    , IOPointType(..) )
 import Skema.Editor.MainWindow( prepareMainWindow )
 \end{code}
 
@@ -35,11 +36,13 @@ testDoc = SkemaDoc
           (M.singleton 0 (NodeKernel (Position 210 20) 0))
     where
       k1 = Kernel "Adder" 
-           (M.fromList [(0,"x"),(1,"y")])
-           (M.fromList [(0,"z")])
+           (M.fromList [(0,IOPoint "x" InputPoint),
+                        (1,IOPoint "y" InputPoint),
+                        (2,IOPoint "z" OutputPoint)])
       k2 = Kernel "Scaler" 
-           (M.fromList [(0,"input")])
-           (M.fromList [(0,"x2"),(1,"x3")])
+           (M.fromList [(0,IOPoint "input" InputPoint),
+                        (1,IOPoint "x2" OutputPoint),
+                        (2,IOPoint "x3" OutputPoint)])
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +58,7 @@ main= do
   let st = SkemaState 
            { skemaDoc = testDoc
            , selectedPos = (0,0) 
-           , selectedElem = SeNOTHING }
+           , selectedElem = Nothing }
 
   state <- newMVar st
 
