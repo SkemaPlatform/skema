@@ -22,18 +22,20 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Paths_skema( getDataFileName )
 import Skema.Editor.SkemaState( SkemaState(..) )
+import Skema.Util( Pos2D(..) )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Kernel(..), Node(..), Position(..), IOPoint(..)
-    , IOPointType(..) )
+    ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
+    , IOPointType(..) ,emptySkemaDoc )
 import Skema.Editor.MainWindow( prepareMainWindow )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 testDoc :: SkemaDoc
-testDoc = SkemaDoc 
-          (M.fromList [(0,k1),(1,k2)])
-          (M.singleton 0 (NodeKernel (Position 210 20) 0))
+testDoc = emptySkemaDoc {
+            library = M.fromList [(0,k1),(1,k2)]
+          , nodes = M.fromList [(0,NodeKernel (Pos2D (210,20)) 0),(1,NodeKernel (Pos2D (100,110)) 0)]
+          , arrows = [NodeArrow 1 2 0 1] }
     where
       k1 = Kernel "Adder" 
            (M.fromList [(0,IOPoint "x" InputPoint),

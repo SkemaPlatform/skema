@@ -42,10 +42,11 @@ import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
     , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
     , stateGet, stateSelectElement )
-import Skema.SkemaDoc
-    ( SkemaDoc(..), Node(..), Position(..), SelectedElement(..)
-    , nodeTranslate )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
+import Skema.SkemaDoc
+    ( SkemaDoc(..), Node(..), SelectedElement(..)
+    , nodeTranslate )
+import Skema.Util( Pos2D(..) )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +108,7 @@ insertNewNode :: Double -> Double -> XS ()
 insertNewNode x y = do
   old_doc <- stateGet skemaDoc
   let last_i = (last.sort.M.keys.nodes) old_doc + 1
-      new_node = NodeKernel (Position x y) 1
+      new_node = NodeKernel (Pos2D (x,y)) 1
   statePutSkemaDoc $ old_doc { 
                          nodes = M.insert last_i new_node (nodes old_doc)}
 \end{code}

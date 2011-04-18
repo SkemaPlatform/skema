@@ -15,7 +15,9 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Util( RGBColor, Rect(..), Circle(..), deg2rad, inside ) where
+module Skema.Util
+    ( Pos2D(..), RGBColor, Rect(..), Circle(..), deg2rad, inside, posx, posy ) 
+        where
 \end{code}
 
 \begin{code}
@@ -23,13 +25,27 @@ type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}
+newtype Pos2D = Pos2D (Double,Double) deriving( Show )
+\end{code}
+
+\begin{code}
+posx :: Pos2D -> Double
+posx (Pos2D val) = fst val
+\end{code}
+
+\begin{code}
+posy :: Pos2D -> Double
+posy (Pos2D val) = snd val
+\end{code}
+
+\begin{code}
 data Rect = Rect
-    { x0 :: !Double, y0 :: !Double, x1 :: !Double, y1 :: !Double }
+    { rectVertex0 :: !Pos2D, rectVertex1 :: !Pos2D }
 \end{code}
 
 \begin{code}
 data Circle = Circle
-    { cx :: !Double, cy :: !Double, rad :: !Double }
+    { circleCenter :: !Pos2D, circleRad :: !Double }
 \end{code}
 
 \begin{code}
@@ -49,14 +65,17 @@ instance Area Rect where
     -- | Check if a point is inside a rectangular region.
     inside px py rect = inx && iny
         where
-          inx = (px >= x0 rect) && (px < x1 rect)
-          iny = (py >= y0 rect) && (py < y1 rect)
+          inx = (px >= (posx vertex0)) && (px < (posx vertex1))
+          iny = (py >= (posy vertex0)) && (py < (posy vertex1))
+          vertex0 = rectVertex0 rect
+          vertex1 = rectVertex1 rect
 \end{code}
 
 \begin{code}
 instance Area Circle where
     -- | Check if a point is inside a circle area.
-    inside px py circle =  dist < (rad circle)**2
+    inside px py circle =  dist < (circleRad circle)**2
         where
-          dist = (px-(cx circle))**2 + (py-(cy circle))**2
+          dist = (px-(posx center))**2 + (py-(posy center))**2
+          center = circleCenter circle
 \end{code}

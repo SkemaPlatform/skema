@@ -20,18 +20,20 @@ module Skema.Editor.Canvas( drawSkemaDoc, drawSelected ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Control.Monad( liftM )
+import Control.Monad( liftM, when )
+import Data.Maybe( isJust, isJust, fromJust )
 import qualified Data.IntMap as M( elems )
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA
     , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo, stroke
-    , selectFontFace, fill, paint, textExtents, textExtentsWidth )
+    , selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo
+    , setDash )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Node, IOPoint, SelectedElement(..), nodePosx, nodePosy
-    , nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight, nodeHeadColor
-    , nodeName, nodeInputPoints, nodeOutputPoints, nodeIOPPosition
-    , isInputPoint, iopName )
-import Skema.Util( deg2rad, RGBColor )
+    ( SkemaDoc(..), NodeArrow(..), Node, IOPoint, SelectedElement(..), nodePosx
+    , nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
+    , nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition
+    , nodeIOPPosition, isInputPoint, iopName )
+import Skema.Util( Pos2D(..), deg2rad, RGBColor, posx, posy )
 import Skema.Editor.Util
     ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
     , calcFontHeight )
@@ -62,6 +64,7 @@ drawSkemaDoc _ _ skdoc = do
 
   Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
   mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
+  mapM_ (drawArrow skdoc) (arrows skdoc)
 \end{code}
 
 \begin{code}
@@ -112,7 +115,7 @@ drawVisualNode skdoc node = do
 drawIOPoint :: Node -> (Int, IOPoint) -> Cr.Render ()
 drawIOPoint node (ipos,point) = do
   let pointRad = nodePointRad node
-      (px,py) = nodeIOPPosition node point ipos
+      Pos2D (px,py) = nodeIOPPosition node point ipos
       name = iopName point
 
   fontHeight <- calcFontHeight
@@ -132,14 +135,31 @@ drawIOPoint node (ipos,point) = do
 drawSelected :: Double -> Double -> Maybe SelectedElement -> Double -> Double -> Double -> Double -> Cr.Render ()
 drawSelected _ _ Nothing _ _ _ _ = return ()
 drawSelected _ _ (Just (SeIOP _ _)) ox oy mx my = do
-  Cr.newPath
+  Cr.setDash [10,5] 0
   Cr.moveTo ox oy
   Cr.lineTo mx my
-  Cr.closePath
   Cr.setLineWidth 1
-  Cr.setSourceRGB 1 1 1
+  Cr.setSourceRGB 0.7 0.7 0.7
   Cr.stroke
-drawSelected _ _ _ ox oy mx my = return ()
+drawSelected _ _ _ _ _ _ _ = return ()
+\end{code}
+
+\begin{code}
+drawArrow :: SkemaDoc -> NodeArrow -> Cr.Render ()
+drawArrow skdoc arrow = do
+  when ((isJust outpos) && (isJust inpos)) $ do                                
+                          Cr.moveTo px0 py0
+                          Cr.curveTo (px0 + 50) py0 (px3 - 50) py3 px3 py3
+                          Cr.setLineWidth 1
+                          Cr.setSourceRGB 0.7 0.7 0.7
+                          Cr.stroke
+      where
+        outpos = arrowPosition skdoc (outputNode arrow) (outputPoint arrow)
+        inpos = arrowPosition skdoc (inputNode arrow) (inputPoint arrow)
+        px0 = posx.fromJust $ outpos
+        py0 = posy.fromJust $ outpos
+        px3 = posx.fromJust $ inpos
+        py3 = posy.fromJust $ inpos
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
