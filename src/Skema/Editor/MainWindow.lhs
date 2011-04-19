@@ -45,7 +45,7 @@ import Skema.Editor.SkemaState
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), SelectedElement(..)
-    , nodeTranslate )
+    , nodeTranslate, isIOPoint )
 import Skema.Util( Pos2D(..) )
 \end{code}
 
@@ -75,7 +75,7 @@ prepareMainWindow xml state = do
          LeftButton <- eventButton
          (mx,my) <- eventCoordinates
          sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ releaseElement mx my 
+         (_,new_sks) <- liftIO $ runXS sks $ releaseElement mx my canvas
          liftIO $ putMVar state new_sks
          liftIO $ widgetQueueDraw canvas
          
@@ -100,7 +100,7 @@ selectElement mx my canvas = do
                                insertNewNode mx my
                                io $ widgetQueueDraw canvas
   statePutSelectedElem selElement
-  statePutSelectedPos (mx, my)
+  statePutSelectedPos (Pos2D (mx, my))
 \end{code}
 
 \begin{code}
@@ -126,21 +126,35 @@ moveTo mx my canvas = do
 moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
 moveSelectedElement mx my (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
-  (ox,oy) <- stateGet selectedPos
+  (Pos2D (ox,oy)) <- stateGet selectedPos
   let diffx = mx - ox
       diffy = my - oy
       new_nodes = M.adjust (nodeTranslate diffx diffy) k (nodes oldDoc)
 
   statePutSkemaDoc $ oldDoc { nodes = new_nodes }
-  statePutSelectedPos (mx,my)
+  statePutSelectedPos (Pos2D (mx,my))
 moveSelectedElement mx my (SeIOP k j) = do
-  statePutSelectedPos2 (mx,my)
+  statePutSelectedPos2 (Pos2D (mx,my))
 \end{code}
 
 \begin{code}
-releaseElement :: Double -> Double -> XS ()
-releaseElement _ _ = do
-  statePutSelectedElem Nothing
+releaseElement :: Double -> Double -> DrawingArea -> XS ()
+releaseElement mx my canvas = do
+  stElem <- stateGet selectedElem
+  when (isJust stElem) $ do
+                         releaseSelectedElement mx my (fromJust stElem)
+                         io $ widgetQueueDraw canvas
+                         statePutSelectedElem Nothing
+\end{code}
+
+\begin{code}
+releaseSelectedElement :: Double -> Double -> SelectedElement -> XS ()
+releaseSelectedElement mx my (SeIOP k0 j0) = do
+  newElement <- stateSelectElement mx my
+  when (maybe False isIOPoint newElement) $ do
+    let (SeIOP k1 j1) = fromJust newElement
+    io $ putStrLn $ "fecha " ++ show k0 ++ show j0 ++ " " ++ show k1 ++ show j1
+releaseSelectedElement _ _ _ = return ()
 \end{code}
 
 \begin{code}
@@ -156,8 +170,8 @@ drawCanvas canvas = do
                                   stDoc)
      
   stElem <- stateGet selectedElem
-  (ox,oy) <- stateGet selectedPos
-  (mx,my) <- stateGet selectedPos2
+  (Pos2D (ox,oy)) <- stateGet selectedPos
+  (Pos2D (mx,my)) <- stateGet selectedPos2
   io $ renderWithDrawable canvas (
                                   drawSelected
                                   (fromIntegral w) 

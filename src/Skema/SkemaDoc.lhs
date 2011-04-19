@@ -138,6 +138,12 @@ data SelectedElement = SeNODE !Int
 \end{code}
 
 \begin{code}
+isIOPoint :: SelectedElement -> Bool
+isIOPoint (SeIOP _ _) = True
+isIOPoint _ = False
+\end{code}
+
+\begin{code}
 selectNodeElement :: Double -> Double -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
 selectNodeElement mx my (k,node,maybeKernel)
     | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)

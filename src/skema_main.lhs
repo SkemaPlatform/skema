@@ -59,8 +59,8 @@ main= do
  
   let st = SkemaState 
            { skemaDoc = testDoc
-           , selectedPos = (0,0) 
-           , selectedPos2 = (0,0) 
+           , selectedPos = Pos2D (0,0) 
+           , selectedPos2 = Pos2D (0,0) 
            , selectedElem = Nothing }
 
   state <- newMVar st

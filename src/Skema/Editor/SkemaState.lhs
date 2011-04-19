@@ -29,6 +29,7 @@ import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
 import qualified Data.IntMap as M( assocs )
 import System.IO( hPutStrLn, stderr )
+import Skema.Util( Pos2D )
 import Skema.SkemaDoc( SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement )
 \end{code}
 
@@ -36,8 +37,8 @@ import Skema.SkemaDoc( SkemaDoc(..), SelectedElement(..), nodeKernel, selectNode
 -- | 'SkemaState', the (mutable) editor state.
 data SkemaState = SkemaState
     { skemaDoc :: SkemaDoc -- ^ Skema document loaded in editor
-    , selectedPos :: !(Double,Double) -- ^ last selected position
-    , selectedPos2 :: !(Double,Double) -- ^ additional selected position
+    , selectedPos :: !Pos2D -- ^ last selected position
+    , selectedPos2 :: !Pos2D -- ^ additional selected position
     , selectedElem :: Maybe SelectedElement -- ^ current selected element 
     }
 \end{code}
@@ -70,12 +71,12 @@ runXS st (XS a) = runStateT a st
 \end{code}
 
 \begin{code}
-statePutSelectedPos :: (Double,Double) -> XS ()
+statePutSelectedPos :: Pos2D -> XS ()
 statePutSelectedPos pos = get >>= \s -> put $ s{ selectedPos = pos }
 \end{code}
 
 \begin{code}
-statePutSelectedPos2 :: (Double,Double) -> XS ()
+statePutSelectedPos2 :: Pos2D -> XS ()
 statePutSelectedPos2 pos = get >>= \s -> put $ s{ selectedPos2 = pos }
 \end{code}
 
