@@ -23,9 +23,10 @@ import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Paths_skema( getDataFileName )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.Util( Pos2D(..) )
+import Skema.Types( IOPointType(..) )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
-    , IOPointType(..) ,emptySkemaDoc, emptyKernel )
+    , emptySkemaDoc, emptyKernel )
 import Skema.Editor.MainWindow( prepareMainWindow )
 \end{code}
 

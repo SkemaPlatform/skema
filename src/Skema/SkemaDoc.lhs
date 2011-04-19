@@ -22,9 +22,14 @@ module Skema.SkemaDoc where
 import Data.Maybe( fromJust, isJust )
 import Data.List( partition, find )
 import Control.Monad( msum, liftM )
-import qualified Data.IntMap as M( IntMap, empty, lookup, elems, assocs )
+import qualified Data.IntMap as M
+    ( IntMap, empty, lookup, elems, assocs, map )
 import Skema.Util
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
+import Skema.Types( IOPointType(..) )
+import Skema.ProgramFlow
+    ( ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..)
+    , emptyProgramFlow )
 \end{code}
 
 \begin{code}
@@ -108,10 +113,6 @@ nodeHeadColor = const (0.51,0.51,0.56)
 \end{code}
 
 \begin{code}
-data IOPointType = InputPoint
-                 | OutputPoint
-                   deriving( Show, Eq )
-
 data IOPoint = IOPoint
     { iopName :: !String 
     , iopType :: !IOPointType }
@@ -132,6 +133,7 @@ data Kernel = Kernel
 \end{code}
 
 \begin{code}
+emptyKernel :: Kernel
 emptyKernel = Kernel "" "" M.empty
 \end{code}
 
@@ -325,4 +327,32 @@ createArrow skdoc ki ji kf jf = do
 sortArrow :: IOPointType -> a -> IOPointType -> a -> (a,a)
 sortArrow OutputPoint initial _ end = (initial,end)
 sortArrow _ initial _ end = (initial,end)
+\end{code}
+
+\begin{code}
+extractProgramFlow :: SkemaDoc -> ProgramFlow
+extractProgramFlow skdoc = emptyProgramFlow
+                           { pfKernels = dkernels
+                           , pfNodes = dnodes
+                           }
+    where
+      dkernels = M.map toPFKernel . library $ skdoc
+      dnodes = M.map toPFNode . nodes $ skdoc
+\end{code}
+
+\begin{code}
+toPFKernel :: Kernel -> PFKernel
+toPFKernel kernel = PFKernel (name kernel) (body kernel) kios
+    where
+      kios = M.map toPFIOPoint . iopoints $ kernel
+\end{code}
+
+\begin{code}
+toPFNode :: Node -> PFNode
+toPFNode node = PFNode (kernelIdx node)
+\end{code}
+
+\begin{code}
+toPFIOPoint :: IOPoint -> PFIOPoint
+toPFIOPoint iop = PFIOPoint (iopName iop) (iopType iop)
 \end{code}
