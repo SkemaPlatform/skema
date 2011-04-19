@@ -25,7 +25,7 @@ import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.Util( Pos2D(..) )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
-    , IOPointType(..) ,emptySkemaDoc )
+    , IOPointType(..) ,emptySkemaDoc, emptyKernel )
 import Skema.Editor.MainWindow( prepareMainWindow )
 \end{code}
 
@@ -37,14 +37,16 @@ testDoc = emptySkemaDoc {
           , nodes = M.fromList [(0,NodeKernel (Pos2D (210,20)) 0),(1,NodeKernel (Pos2D (100,110)) 0)]
           , arrows = [NodeArrow 1 2 0 1] }
     where
-      k1 = Kernel "Adder" 
-           (M.fromList [(0,IOPoint "x" InputPoint),
-                        (1,IOPoint "y" InputPoint),
-                        (2,IOPoint "z" OutputPoint)])
-      k2 = Kernel "Scaler" 
-           (M.fromList [(0,IOPoint "input" InputPoint),
-                        (1,IOPoint "x2" OutputPoint),
-                        (2,IOPoint "x3" OutputPoint)])
+      k1 = emptyKernel {
+             name = "Adder" 
+           , iopoints = M.fromList [(0,IOPoint "x" InputPoint),
+                                    (1,IOPoint "y" InputPoint),
+                                    (2,IOPoint "z" OutputPoint)] }
+      k2 = emptyKernel {
+             name = "Scaler" 
+           , iopoints = M.fromList [(0,IOPoint "input" InputPoint),
+                                    (1,IOPoint "x2" OutputPoint),
+                                    (2,IOPoint "x3" OutputPoint)] }
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

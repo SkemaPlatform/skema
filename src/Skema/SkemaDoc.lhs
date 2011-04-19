@@ -126,8 +126,13 @@ isInputPoint = (==InputPoint) . iopType
 \begin{code}
 data Kernel = Kernel
     { name :: String 
+    , body :: String
     , iopoints :: M.IntMap IOPoint }
     deriving( Show )
+\end{code}
+
+\begin{code}
+emptyKernel = Kernel "" "" M.empty
 \end{code}
 
 \begin{code}
