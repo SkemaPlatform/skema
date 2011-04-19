@@ -71,18 +71,18 @@ nodeIOPPosition node point idx
 nodeInputPosition :: Node -> Int -> Pos2D
 nodeInputPosition node idx = Pos2D (px,py)
     where
-      idxOffset = (fromIntegral idx)*2*(nodePointRad node + 1)
+      idxOffset = fromIntegral idx *2*(nodePointRad node + 1)
       px = nodePosx node
-      py = (nodePosy node) + (nodeHeight node) - 10 - idxOffset
+      py = nodePosy node + nodeHeight node - 10 - idxOffset
 \end{code}
 
 \begin{code}
 nodeOutputPosition :: Node -> Int -> Pos2D
 nodeOutputPosition node idx = Pos2D (px,py)
     where
-      idxOffset = (fromIntegral idx)*2*(nodePointRad node + 1)
-      px = (nodePosx node) + (nodeWidth node)
-      py = (nodePosy node) + (nodeHeadHeight node) + 10 + idxOffset
+      idxOffset = fromIntegral idx *2*(nodePointRad node + 1)
+      px = nodePosx node + nodeWidth node
+      py = nodePosy node + nodeHeadHeight node + 10 + idxOffset
 \end{code}
 
 \begin{code}
@@ -99,7 +99,7 @@ nodeMoveTo npos node = node { position = npos }
 nodeTranslate :: Pos2D -> Node -> Node
 nodeTranslate dpos node = node { position = npos }
     where
-      npos = (position node) + dpos
+      npos = position node + dpos
 \end{code}
 
 \begin{code}
@@ -145,7 +145,7 @@ isIOPoint _ = False
 \begin{code}
 selectNodeElement :: Pos2D -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
 selectNodeElement (Pos2D (mx,my)) (k,node,maybeKernel)
-    | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)
+    | isFullSelected && isJust pointSelected = Just $ SeIOP k (fromJust pointSelected)
     | isFullSelected && isBodySelected = Just $ SeNODE k
     | otherwise = Nothing
     where 
@@ -165,7 +165,7 @@ selectPoints :: Double -> Double -> Node -> [(Int,IOPoint)] -> Maybe Int
 selectPoints mx my node xs = msum . map (selectPoint mx my node) $ ys
     where
       (ins,outs) = partition (isInputPoint.snd) xs
-      ys = (zip [0..] ins) ++ (zip [0..] outs)
+      ys = zip [0..] ins ++ zip [0..] outs
 \end{code}
 
 \begin{code}
@@ -184,6 +184,7 @@ data NodeArrow = NodeArrow
     , outputPoint :: !Int
     , inputNode :: !Int
     , inputPoint :: !Int }
+    deriving( Show )
 \end{code}
 
 \begin{code}
@@ -231,8 +232,8 @@ nodeKernel skdoc node = M.lookup (kernelIdx node) (library skdoc)
 sortedIndex :: IOPoint -> Int -> [(Int,IOPoint)] -> Maybe Int
 sortedIndex iop idx xs = liftM fst $ find findfun $ zip [0..] sames
     where 
-      findfun = ((==idx).fst.snd)
-      sames = filter (\(_,b)-> (iopType b) == (iopType iop)) xs
+      findfun = (==idx).fst.snd
+      sames = filter (\(_,b)-> iopType b == iopType iop) xs
 \end{code}
 
 \begin{code}
@@ -298,7 +299,7 @@ validArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Bool
 validArrow skdoc ki ji kf jf 
     | ki == kf = False
     | (not . null) samepoints = False
-    | (isJust initType) && (isJust finalType) = (fromJust initType) == (fromJust finalType)
+    | isJust initType && isJust finalType = fromJust initType /= fromJust finalType
     | otherwise = True
     where
       samepoints = filter (isSameArrowPoint ki ji kf jf) (arrows skdoc)
@@ -308,5 +309,15 @@ validArrow skdoc ki ji kf jf
 
 \begin{code}
 createArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Maybe NodeArrow
-createArrow _ _ _ _ _ = Nothing
+createArrow skdoc ki ji kf jf = do
+  point1 <- arrowIOPointType skdoc ki ji
+  point2 <- arrowIOPointType skdoc kf jf
+  let ((kin,jin),(kout,jout)) = sortArrow point1 (ki,ji) point2 (kf,jf)
+  Just $ NodeArrow kin jin kout jout
+\end{code}
+
+\begin{code}
+sortArrow :: IOPointType -> a -> IOPointType -> a -> (a,a)
+sortArrow OutputPoint initial _ end = (initial,end)
+sortArrow _ initial _ end = (initial,end)
 \end{code}

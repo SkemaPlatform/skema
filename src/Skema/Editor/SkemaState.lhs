@@ -101,7 +101,7 @@ stateGet f = liftM f get
 stateSelectElement :: Pos2D -> XS (Maybe SelectedElement)
 stateSelectElement pos = do
   stDoc <- stateGet skemaDoc
-  return $ msum . map (selectNodeElement pos) . map (\(i,n) -> (i,n,nodeKernel stDoc n)) . M.assocs.nodes $ stDoc
+  return $ msum . map (selectNodeElement pos . \(i,n) -> (i,n,nodeKernel stDoc n)) . M.assocs.nodes $ stDoc
 \end{code}
 
 \begin{code}

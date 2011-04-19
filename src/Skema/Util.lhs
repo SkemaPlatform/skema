@@ -86,8 +86,8 @@ instance Area Rect where
     -- | Check if a point is inside a rectangular region.
     inside px py rect = inx && iny
         where
-          inx = (px >= (posx vertex0)) && (px < (posx vertex1))
-          iny = (py >= (posy vertex0)) && (py < (posy vertex1))
+          inx = (px >= posx vertex0) && (px < posx vertex1)
+          iny = (py >= posy vertex0) && (py < posy vertex1)
           vertex0 = rectVertex0 rect
           vertex1 = rectVertex1 rect
 \end{code}
@@ -95,8 +95,8 @@ instance Area Rect where
 \begin{code}
 instance Area Circle where
     -- | Check if a point is inside a circle area.
-    inside px py circle =  dist < (circleRad circle)**2
+    inside px py circle =  dist < circleRad circle ** 2
         where
-          dist = (px-(posx center))**2 + (py-(posy center))**2
+          dist = (px - posx center)**2 + (py - posy center)**2
           center = circleCenter circle
 \end{code}

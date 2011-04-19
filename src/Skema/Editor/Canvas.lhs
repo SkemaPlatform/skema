@@ -123,9 +123,8 @@ drawIOPoint node (ipos,point) = do
   circlePath px py pointRad
   drawFillStroke (fillColor point) (lineColor point)
   Cr.setSourceRGB 0.2 0.2 0.2
-  if (isInputPoint point)
-    then do
-      showTextOn (px+6) (py+fontHeight*0.5) name
+  if isInputPoint point
+    then showTextOn (px+6) (py+fontHeight*0.5) name
     else do
       textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents name
       showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) name
@@ -146,8 +145,7 @@ drawSelected _ _ _ _ _ _ _ = return ()
 
 \begin{code}
 drawArrow :: SkemaDoc -> NodeArrow -> Cr.Render ()
-drawArrow skdoc arrow = do
-  when ((isJust outpos) && (isJust inpos)) $ do                                
+drawArrow skdoc arrow = when (isJust outpos && isJust inpos) $ do
                           Cr.moveTo px0 py0
                           Cr.curveTo (px0 + 50) py0 (px3 - 50) py3 px3 py3
                           Cr.setLineWidth 1
