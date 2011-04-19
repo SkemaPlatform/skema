@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Concurrent.MVar( newMVar )
-import qualified Data.IntMap as M( singleton, fromList )
+import qualified Data.IntMap as M( fromList )
 import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )

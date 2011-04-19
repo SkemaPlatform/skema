@@ -91,16 +91,15 @@ nodeHeadHeight = const 12
 \end{code}
 
 \begin{code}
-nodeMoveTo :: Double -> Double -> Node -> Node
-nodeMoveTo nx ny node = node { position = Pos2D (nx, ny) }
+nodeMoveTo :: Pos2D -> Node -> Node
+nodeMoveTo npos node = node { position = npos }
 \end{code}
 
 \begin{code}
-nodeTranslate :: Double -> Double -> Node -> Node
-nodeTranslate dx dy node = node { position = Pos2D (nx, ny) }
+nodeTranslate :: Pos2D -> Node -> Node
+nodeTranslate dpos node = node { position = npos }
     where
-      nx = nodePosx node + dx
-      ny = nodePosy node + dy
+      npos = (position node) + dpos
 \end{code}
 
 \begin{code}
@@ -144,8 +143,8 @@ isIOPoint _ = False
 \end{code}
 
 \begin{code}
-selectNodeElement :: Double -> Double -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
-selectNodeElement mx my (k,node,maybeKernel)
+selectNodeElement :: Pos2D -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
+selectNodeElement (Pos2D (mx,my)) (k,node,maybeKernel)
     | isFullSelected && (isJust pointSelected) = Just $ SeIOP k (fromJust pointSelected)
     | isFullSelected && isBodySelected = Just $ SeNODE k
     | otherwise = Nothing
@@ -249,4 +248,65 @@ arrowPosition skdoc nidx ioidx = do
   iop <- M.lookup ioidx (iopoints kernel)
   iopPos <- sortedIndex iop ioidx (M.assocs.iopoints $ kernel)
   return $ nodeIOPPosition node iop iopPos
+\end{code}
+
+\begin{code}
+arrowIOPointType :: SkemaDoc -> Int -> Int -> Maybe IOPointType
+arrowIOPointType skdoc nidx ioidx = do
+  node <- M.lookup nidx (nodes skdoc)
+  kernel <- M.lookup (kernelIdx node) (library skdoc)
+  iop <- M.lookup ioidx (iopoints kernel)
+  return $ iopType iop
+\end{code}
+
+\begin{code}
+insertValidArrow :: SkemaDoc -> NodeArrow -> SkemaDoc
+insertValidArrow skdoc narrow = skdoc { arrows = narrow : oldArrows }
+    where
+      oldArrows = arrows skdoc
+\end{code}
+
+\begin{code}
+insertNewArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> SkemaDoc
+insertNewArrow skdoc ki ji kf jf 
+    | validArrow skdoc ki ji kf jf = maybe skdoc (insertValidArrow skdoc) narrow
+    | otherwise = skdoc
+    where 
+      narrow = createArrow skdoc ki ji kf jf
+\end{code}
+
+\begin{code}
+isSameArrow :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
+isSameArrow pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint) 
+    | (inode==pn0) && (ipoint==pp0) && (enode==pn1) && (epoint==pp1) = True
+    | (inode==pn1) && (ipoint==pp1) && (enode==pn0) && (epoint==pp0) = True
+    | otherwise = False
+\end{code}
+
+\begin{code}
+isSameArrowPoint :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
+isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
+    | (inode==pn0) && (ipoint==pp0) = True
+    | (enode==pn0) && (epoint==pp0) = True
+    | (inode==pn1) && (ipoint==pp1) = True
+    | (enode==pn1) && (epoint==pp1) = True
+    | otherwise = False
+\end{code}
+
+\begin{code}
+validArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Bool
+validArrow skdoc ki ji kf jf 
+    | ki == kf = False
+    | (not . null) samepoints = False
+    | (isJust initType) && (isJust finalType) = (fromJust initType) == (fromJust finalType)
+    | otherwise = True
+    where
+      samepoints = filter (isSameArrowPoint ki ji kf jf) (arrows skdoc)
+      initType = arrowIOPointType skdoc ki ji
+      finalType = arrowIOPointType skdoc kf jf
+\end{code}
+
+\begin{code}
+createArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Maybe NodeArrow
+createArrow _ _ _ _ _ = Nothing
 \end{code}

@@ -41,7 +41,7 @@ import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
     , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
-    , stateGet, stateSelectElement )
+    , stateGet, stateSelectElement, stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), SelectedElement(..)
@@ -95,7 +95,7 @@ prepareMainWindow xml state = do
 \begin{code}
 selectElement :: Double -> Double -> DrawingArea -> XS ()
 selectElement mx my canvas = do
-  selElement <- stateSelectElement mx my
+  selElement <- stateSelectElement (Pos2D (mx,my))
   when (isNothing selElement) $ do
                                insertNewNode mx my
                                io $ widgetQueueDraw canvas
@@ -118,23 +118,21 @@ moveTo :: Double -> Double -> DrawingArea -> XS ()
 moveTo mx my canvas = do
   stElem <- stateGet selectedElem
   when (isJust stElem) $ do
-                        moveSelectedElement mx my (fromJust stElem)
+                        moveSelectedElement (Pos2D (mx,my)) (fromJust stElem)
                         io $ widgetQueueDraw canvas
 \end{code}
 
 \begin{code}
-moveSelectedElement :: Double -> Double -> SelectedElement -> XS ()
-moveSelectedElement mx my (SeNODE k) = do
+moveSelectedElement :: Pos2D -> SelectedElement -> XS ()
+moveSelectedElement mpos (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
-  (Pos2D (ox,oy)) <- stateGet selectedPos
-  let diffx = mx - ox
-      diffy = my - oy
-      new_nodes = M.adjust (nodeTranslate diffx diffy) k (nodes oldDoc)
+  ori <- stateGet selectedPos
+  let diff = mpos - ori
+      new_nodes = M.adjust (nodeTranslate diff) k (nodes oldDoc)
 
   statePutSkemaDoc $ oldDoc { nodes = new_nodes }
-  statePutSelectedPos (Pos2D (mx,my))
-moveSelectedElement mx my (SeIOP k j) = do
-  statePutSelectedPos2 (Pos2D (mx,my))
+  statePutSelectedPos mpos
+moveSelectedElement mpos (SeIOP _ _) = statePutSelectedPos2 mpos
 \end{code}
 
 \begin{code}
@@ -149,11 +147,11 @@ releaseElement mx my canvas = do
 
 \begin{code}
 releaseSelectedElement :: Double -> Double -> SelectedElement -> XS ()
-releaseSelectedElement mx my (SeIOP k0 j0) = do
-  newElement <- stateSelectElement mx my
-  when (maybe False isIOPoint newElement) $ do
-    let (SeIOP k1 j1) = fromJust newElement
-    io $ putStrLn $ "fecha " ++ show k0 ++ show j0 ++ " " ++ show k1 ++ show j1
+releaseSelectedElement mx my (SeIOP ki ji) = do
+  endElem <- stateSelectElement (Pos2D (mx,my))
+  when (maybe False isIOPoint endElem) $ do
+    let (SeIOP kf jf) = (fromJust endElem)
+    stateInsertNewArrow ki ji kf jf
 releaseSelectedElement _ _ _ = return ()
 \end{code}
 

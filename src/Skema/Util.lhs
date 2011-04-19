@@ -15,6 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 module Skema.Util
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), deg2rad, inside, posx, posy ) 
         where
@@ -25,7 +26,7 @@ type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}
-newtype Pos2D = Pos2D (Double,Double) deriving( Show )
+newtype Pos2D = Pos2D (Double,Double) deriving( Eq, Show )
 \end{code}
 
 \begin{code}
@@ -36,6 +37,26 @@ posx (Pos2D val) = fst val
 \begin{code}
 posy :: Pos2D -> Double
 posy (Pos2D val) = snd val
+\end{code}
+
+\begin{code}
+instance Num Pos2D where
+    (Pos2D (ax,ay)) + (Pos2D (bx,by)) = Pos2D (ax+bx,ay+by)
+    (Pos2D (ax,ay)) - (Pos2D (bx,by)) = Pos2D (ax-bx,ay-by)
+    (Pos2D (ax,ay)) * (Pos2D (bx,by)) = Pos2D (ax*bx,ay*by)
+    abs (Pos2D (x,y)) = Pos2D (abs x, abs y)
+    signum (Pos2D (x,y)) = Pos2D (signum x, signum y)
+    fromInteger i = Pos2D (fromInteger i,fromInteger i)
+\end{code}
+
+\begin{code}
+class Mult a b c | a b -> c where
+    (*.) :: a -> b -> c
+\end{code}
+
+\begin{code}
+instance Mult Double Pos2D Pos2D where
+    n *. (Pos2D (x,y)) = Pos2D (n*x,n*y)
 \end{code}
 
 \begin{code}

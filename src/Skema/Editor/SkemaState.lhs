@@ -19,7 +19,7 @@
 module Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, get, put, trace, whenXS
     , statePutSelectedPos, statePutSelectedPos2, statePutSelectedElem
-    , statePutSkemaDoc, stateGet, stateSelectElement ) 
+    , statePutSkemaDoc, stateGet, stateSelectElement, stateInsertNewArrow ) 
         where
 \end{code}
 
@@ -30,7 +30,9 @@ import Control.Monad.State( MonadState, StateT(..), get, put )
 import qualified Data.IntMap as M( assocs )
 import System.IO( hPutStrLn, stderr )
 import Skema.Util( Pos2D )
-import Skema.SkemaDoc( SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement )
+import Skema.SkemaDoc
+    ( SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement
+    , insertNewArrow )
 \end{code}
 
 \begin{code}
@@ -96,8 +98,15 @@ stateGet f = liftM f get
 \end{code}
 
 \begin{code}
-stateSelectElement :: Double -> Double -> XS (Maybe SelectedElement)
-stateSelectElement mx my = do
+stateSelectElement :: Pos2D -> XS (Maybe SelectedElement)
+stateSelectElement pos = do
   stDoc <- stateGet skemaDoc
-  return $ msum . map (selectNodeElement mx my) . map (\(i,n) -> (i,n,nodeKernel stDoc n)) . M.assocs.nodes $ stDoc
+  return $ msum . map (selectNodeElement pos) . map (\(i,n) -> (i,n,nodeKernel stDoc n)) . M.assocs.nodes $ stDoc
+\end{code}
+
+\begin{code}
+stateInsertNewArrow :: Int -> Int -> Int -> Int -> XS ()
+stateInsertNewArrow ki ji kf jf = do
+  stDoc <- stateGet skemaDoc
+  statePutSkemaDoc $ insertNewArrow stDoc ki ji kf jf
 \end{code}
