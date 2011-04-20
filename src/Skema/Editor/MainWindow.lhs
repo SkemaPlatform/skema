@@ -225,7 +225,7 @@ setupKernelsView view model = do
 
 \begin{code}
 extractKernelsTree :: SkemaDoc -> Forest String
-extractKernelsTree skdoc = map (\a -> Node (name a) []) . M.elems . library $ skdoc
+extractKernelsTree = map (\a -> Node (name a) []) . M.elems . library
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
