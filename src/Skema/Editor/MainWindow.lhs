@@ -48,6 +48,12 @@ import Graphics.UI.Gtk.ModelView.TreeStore
 import Graphics.UI.Gtk.ModelView.TreeView
     ( TreeView, castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn
     , treeViewSetModel )
+import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
+    ( castToToolButton, onToolButtonClicked )
+import Graphics.UI.Gtk.Windows.Dialog( Dialog(..), castToDialog, dialogRun )
+import Graphics.UI.Gtk.Multiline.TextView
+    ( TextView(..), castToTextView, textViewGetBuffer )
+import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText )
 import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
     , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
@@ -55,8 +61,9 @@ import Skema.Editor.SkemaState
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
-    , nodeTranslate, isIOPoint )
-import Skema.Util( Pos2D(..) )
+    , nodeTranslate, isIOPoint, extractProgramFlow )
+import Skema.ProgramFlow( generateJSONString )
+import Skema.Util( Pos2D(..), prettyJSON )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,6 +115,12 @@ prepareMainWindow xml state = do
   liftIO $ putMVar state sks
   treeViewSetModel ktree storeKernels
   setupKernelsView ktree storeKernels
+
+  btn <- xmlGetWidget xml castToToolButton "mtb_pf_view"
+
+  pfViewDialog <- xmlGetWidget xml castToDialog "d_pf_view"
+  pfViewText <- xmlGetWidget xml castToTextView "pf_view_text"
+  onToolButtonClicked btn $ openProgramFlowWindow pfViewDialog pfViewText state
   
   return ()
 \end{code}
@@ -219,6 +232,19 @@ setupKernelsView view model = do
 \begin{code}
 extractKernelsTree :: SkemaDoc -> Forest String
 extractKernelsTree skdoc = map (\a -> Node (name a) []) . M.elems . library $ skdoc
+\end{code}
+
+\begin{code}
+openProgramFlowWindow :: Dialog -> TextView -> MVar SkemaState -> IO ()
+openProgramFlowWindow dlg tv state = do
+  sks <- liftIO $ takeMVar state
+  let json = prettyJSON . generateJSONString . extractProgramFlow . skemaDoc $ sks
+  liftIO $ putMVar state sks
+  
+  tbuffer <- textViewGetBuffer tv
+  textBufferSetText tbuffer json
+  _ <- dialogRun dlg
+  return ()
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
