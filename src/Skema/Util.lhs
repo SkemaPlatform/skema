@@ -17,7 +17,7 @@
 \begin{code}
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 module Skema.Util
-    ( Pos2D(..), RGBColor, Rect(..), Circle(..), deg2rad, inside, posx, posy ) 
+    ( Pos2D(..), RGBColor, Rect(..), Circle(..), deg2rad, inside, posx, posy, prettyJSON ) 
         where
 \end{code}
 
@@ -99,4 +99,23 @@ instance Area Circle where
         where
           dist = (px - posx center)**2 + (py - posy center)**2
           center = circleCenter circle
+\end{code}
+
+\begin{code}
+prettyJSON :: String -> String
+prettyJSON buff = prettyJSON' buff 0
+\end{code}
+
+\begin{code}
+prettyJSON' :: String -> Int -> String
+prettyJSON' [] _ = []
+prettyJSON' ('{':xs) lvl = "{\n" ++ tabs (lvl+1) ++ prettyJSON' xs (lvl+1)
+prettyJSON' ('}':xs) lvl = '}' : prettyJSON' xs (lvl-1)
+prettyJSON' (',':xs) lvl = ",\n" ++ tabs lvl ++ prettyJSON' xs lvl
+prettyJSON' ('[':xs) lvl = '[' : prettyJSON' xs (lvl+1)
+prettyJSON' (']':xs) lvl = ']' : prettyJSON' xs (lvl-1)
+prettyJSON' (x:xs) lvl = x : prettyJSON' xs lvl
+
+tabs :: Int -> String
+tabs n = replicate (4*n) ' '
 \end{code}
