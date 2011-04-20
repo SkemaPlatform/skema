@@ -16,84 +16,111 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 module Skema.ProgramFlow
-    ( PFIOPoint(..), PFKernel(..), ProgramFlow(..), PFNode(..)
-    , emptyProgramFlow ) where
+    ( PFIOPoint(..), PFKernel(..), ProgramFlow(..), PFNode(..), PFArrow(..)
+    , emptyProgramFlow, generateJSONString ) where
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import qualified Data.IntMap as M( IntMap, empty )
-import Text.JSON( Result(..), JSON(..), JSValue(..), toJSString, makeObj )
+import Control.Arrow( second )
+import qualified Data.IntMap as MI( IntMap, empty )
+import qualified Data.Map as M( Map, empty, assocs )
+import Text.JSON
+    ( Result(..), JSON(..), JSValue(..), makeObj, encode )
 import Skema.Types( IOPointType(..) )
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 data PFIOPoint = PFIOPoint
-    { pfIOPName :: !String
-    , pfIOPType :: !IOPointType }
+    { pfIOPType :: !IOPointType }
     deriving( Show )
-\end{code}
-
-\begin{code}
-instance JSON IOPointType where
-    showJSON InputPoint = showJSON "InputPoint"
-    showJSON OutputPoint = showJSON "OutputPoint"
-    readJSON _ = Error "not implemented"
 \end{code}
 
 \begin{code}
 instance JSON PFIOPoint where
     showJSON pfiop = makeObj 
-                     [ ("name", showJSON . pfIOPName $ pfiop)
-                     , ("type", showJSON . pfIOPType $ pfiop)]
+                     [("type", showJSON . pfIOPType $ pfiop)]
     readJSON _ = Error "not implemented"
 \end{code}
 
 \begin{code}
 data PFKernel = PFKernel
-    { pfkName :: !String 
-    , pfkBody :: !String
-    , pfkIOPoints :: M.IntMap PFIOPoint }
+    { pfkBody :: !String
+    , pfkIOPoints :: M.Map String PFIOPoint }
     deriving( Show )
 \end{code}
 
 \begin{code}
 instance JSON PFKernel where
     showJSON pfk = makeObj 
-                   [ ("name", showJSON . pfkName $ pfk)
-                   , ("body", showJSON . pfkBody $ pfk)
-                   , ("io", showJSON . pfkIOPoints $ pfk)]
+                   [ ("body", showJSON . pfkBody $ pfk)
+                   , ("io", mapToObj . pfkIOPoints $ pfk)]
     readJSON _ = Error "not implemented"
 \end{code}
 
 \begin{code}
 data PFNode = PFNode
-    { pfnIndex :: !Int }
+    { pfnIndex :: !String }
     deriving( Show )
 \end{code}
 
 \begin{code}
 instance JSON PFNode where
     showJSON pfn = makeObj
-                   [ ("idx", showJSON . pfnIndex $ pfn )]
+                   [ ("kernel", showJSON . pfnIndex $ pfn )]
+    readJSON _ = Error "not implemented"
+\end{code}
+
+\begin{code}
+type PFArrowPoint = (Int,String)
+\end{code}
+
+\begin{code}
+data PFArrow = PFArrow
+    { pfaOuput :: !PFArrowPoint 
+    , pfaInput :: !PFArrowPoint }
+               deriving( Show )
+\end{code}
+
+\begin{code}
+instance JSON PFArrow where
+    showJSON pfa = makeObj
+                   [ ("ouput", showJSON . pfaOuput $ pfa)
+                   , ("input", showJSON . pfaInput $ pfa)]
     readJSON _ = Error "not implemented"
 \end{code}
 
 \begin{code}
 data ProgramFlow = ProgramFlow
-    { pfKernels :: M.IntMap PFKernel
-    , pfNodes :: M.IntMap PFNode }
+    { pfKernels :: M.Map String PFKernel
+    , pfNodes :: MI.IntMap PFNode 
+    , pfArrows :: [PFArrow]}
     deriving( Show )
 \end{code}
 
 \begin{code}
 instance JSON ProgramFlow where
     showJSON pfn = makeObj
-                   [ ("kernels", showJSON . pfKernels $ pfn)
-                   , ("nodes", showJSON . pfNodes $ pfn)]
+                   [ ("kernels", mapToObj . pfKernels $ pfn)
+                   , ("nodes", showJSON . pfNodes $ pfn)
+                   , ("arrows", showJSON . pfArrows $ pfn)]
     readJSON _ = Error "not implemented"
 \end{code}
 
 \begin{code}
-emptyProgramFlow :: ProgramFlow
-emptyProgramFlow = ProgramFlow M.empty M.empty
+mapToObj :: JSON a => M.Map String a -> JSValue
+mapToObj = makeObj . map (second showJSON) . M.assocs
 \end{code}
+
+\begin{code}
+emptyProgramFlow :: ProgramFlow
+emptyProgramFlow = ProgramFlow M.empty MI.empty []
+\end{code}
+
+\begin{code}
+generateJSONString :: ProgramFlow -> String
+generateJSONString = encode . showJSON
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

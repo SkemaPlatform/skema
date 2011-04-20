@@ -26,7 +26,7 @@ import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
-import Data.Tree( Tree(..), Forest(..) )
+import Data.Tree( Tree(..), Forest )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk
     ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
@@ -211,7 +211,7 @@ setupKernelsView view model = do
   treeViewColumnPackStart col renderer True
   cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
 
-  treeViewAppendColumn view col
+  _ <- treeViewAppendColumn view col
   
   return ()
 \end{code}

@@ -19,16 +19,18 @@ module Skema.SkemaDoc where
 \end{code}
 
 \begin{code}
-import Data.Maybe( fromJust, isJust )
+import Data.Maybe( fromJust, isJust, mapMaybe )
 import Data.List( partition, find )
 import Control.Monad( msum, liftM )
-import qualified Data.IntMap as M
-    ( IntMap, empty, lookup, elems, assocs, map )
+import Control.Arrow( (&&&), second )
+import qualified Data.IntMap as MI
+    ( IntMap, empty, lookup, elems, assocs, fromList )
+import qualified Data.Map as M( fromList )
 import Skema.Util
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
 import Skema.Types( IOPointType(..) )
 import Skema.ProgramFlow
-    ( ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..)
+    ( ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..)
     , emptyProgramFlow )
 \end{code}
 
@@ -128,13 +130,13 @@ isInputPoint = (==InputPoint) . iopType
 data Kernel = Kernel
     { name :: String 
     , body :: String
-    , iopoints :: M.IntMap IOPoint }
+    , iopoints :: MI.IntMap IOPoint }
     deriving( Show )
 \end{code}
 
 \begin{code}
 emptyKernel :: Kernel
-emptyKernel = Kernel "" "" M.empty
+emptyKernel = Kernel "" "" MI.empty
 \end{code}
 
 \begin{code}
@@ -164,7 +166,7 @@ selectNodeElement (Pos2D (mx,my)) (k,node,maybeKernel)
       isFullSelected = inside mx my (Rect (Pos2D (initx-rad,inity)) (Pos2D (endx+2*rad,endy)))
       isBodySelected = (mx >= initx) && (mx < endx) 
       pointSelected =  selectPoints mx my node points
-      points = maybe [] (M.assocs.iopoints) maybeKernel
+      points = maybe [] (MI.assocs.iopoints) maybeKernel
 \end{code}
 
 \begin{code}
@@ -196,28 +198,28 @@ data NodeArrow = NodeArrow
 
 \begin{code}
 data SkemaDoc = SkemaDoc 
-    { library :: M.IntMap Kernel
-    , nodes :: M.IntMap Node 
+    { library :: MI.IntMap Kernel
+    , nodes :: MI.IntMap Node 
     , arrows :: [NodeArrow] }
 \end{code}
 
 \begin{code}
 emptySkemaDoc :: SkemaDoc
-emptySkemaDoc = SkemaDoc M.empty M.empty []
+emptySkemaDoc = SkemaDoc MI.empty MI.empty []
 \end{code}
 
 \begin{code}
 nodeName :: SkemaDoc -> Node -> String
 nodeName skdoc node = maybe "*noname*" name maybeKernel
     where
-      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+      maybeKernel = MI.lookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
 nodeIOPoints :: SkemaDoc -> Node -> [IOPoint]
-nodeIOPoints skdoc node = maybe [] (M.elems.iopoints) maybeKernel
+nodeIOPoints skdoc node = maybe [] (MI.elems.iopoints) maybeKernel
     where
-      maybeKernel = M.lookup (kernelIdx node) (library skdoc) 
+      maybeKernel = MI.lookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
@@ -232,7 +234,7 @@ nodeOutputPoints skdoc = filter (not.isInputPoint) . nodeIOPoints skdoc
 
 \begin{code}
 nodeKernel :: SkemaDoc -> Node -> Maybe Kernel
-nodeKernel skdoc node = M.lookup (kernelIdx node) (library skdoc) 
+nodeKernel skdoc node = MI.lookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
@@ -251,19 +253,19 @@ selectedPosition _ _ = Pos2D (0,0)
 \begin{code}
 arrowPosition :: SkemaDoc -> Int -> Int -> Maybe Pos2D
 arrowPosition skdoc nidx ioidx = do
-  node <- M.lookup nidx (nodes skdoc)
-  kernel <- M.lookup (kernelIdx node) (library skdoc)
-  iop <- M.lookup ioidx (iopoints kernel)
-  iopPos <- sortedIndex iop ioidx (M.assocs.iopoints $ kernel)
+  node <- MI.lookup nidx (nodes skdoc)
+  kernel <- MI.lookup (kernelIdx node) (library skdoc)
+  iop <- MI.lookup ioidx (iopoints kernel)
+  iopPos <- sortedIndex iop ioidx (MI.assocs.iopoints $ kernel)
   return $ nodeIOPPosition node iop iopPos
 \end{code}
 
 \begin{code}
 arrowIOPointType :: SkemaDoc -> Int -> Int -> Maybe IOPointType
 arrowIOPointType skdoc nidx ioidx = do
-  node <- M.lookup nidx (nodes skdoc)
-  kernel <- M.lookup (kernelIdx node) (library skdoc)
-  iop <- M.lookup ioidx (iopoints kernel)
+  node <- MI.lookup nidx (nodes skdoc)
+  kernel <- MI.lookup (kernelIdx node) (library skdoc)
+  iop <- MI.lookup ioidx (iopoints kernel)
   return $ iopType iop
 \end{code}
 
@@ -334,25 +336,41 @@ extractProgramFlow :: SkemaDoc -> ProgramFlow
 extractProgramFlow skdoc = emptyProgramFlow
                            { pfKernels = dkernels
                            , pfNodes = dnodes
+                           , pfArrows = darrows
                            }
     where
-      dkernels = M.map toPFKernel . library $ skdoc
-      dnodes = M.map toPFNode . nodes $ skdoc
+      dkernels = M.fromList . map (name &&& toPFKernel) . MI.elems . library $ skdoc
+      dnodes = MI.fromList . map (second fromJust) . filter (isJust . snd ) . map (second $ toPFNode (library skdoc)) . MI.assocs . nodes $ skdoc
+      darrows = mapMaybe (toPFArrow skdoc) . arrows $ skdoc
 \end{code}
 
 \begin{code}
 toPFKernel :: Kernel -> PFKernel
-toPFKernel kernel = PFKernel (name kernel) (body kernel) kios
+toPFKernel kernel = PFKernel (body kernel) kios
     where
-      kios = M.map toPFIOPoint . iopoints $ kernel
+      kios = M.fromList . map (iopName &&& toPFIOPoint) . MI.elems . iopoints $ kernel
 \end{code}
 
 \begin{code}
-toPFNode :: Node -> PFNode
-toPFNode node = PFNode (kernelIdx node)
+toPFNode :: MI.IntMap Kernel -> Node -> Maybe PFNode
+toPFNode kernels node = do
+  kernel <- MI.lookup (kernelIdx node) kernels
+  Just $ PFNode (name kernel)
 \end{code}
 
 \begin{code}
 toPFIOPoint :: IOPoint -> PFIOPoint
-toPFIOPoint iop = PFIOPoint (iopName iop) (iopType iop)
+toPFIOPoint iop = PFIOPoint (iopType iop)
+\end{code}
+
+\begin{code}
+toPFArrow :: SkemaDoc -> NodeArrow -> Maybe PFArrow
+toPFArrow skdoc arrow = do
+  nodeO <- MI.lookup (outputNode arrow) (nodes skdoc)
+  nodeI <- MI.lookup (inputNode arrow) (nodes skdoc)
+  kernelO <- MI.lookup (kernelIdx nodeO) (library skdoc) 
+  kernelI <- MI.lookup (kernelIdx nodeI) (library skdoc) 
+  pointO <- MI.lookup (outputPoint arrow) (iopoints kernelO)
+  pointI <- MI.lookup (inputPoint arrow) (iopoints kernelI)
+  return $ PFArrow (outputNode arrow, iopName pointO) (inputNode arrow, iopName pointI)
 \end{code}

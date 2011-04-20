@@ -18,8 +18,23 @@
 module Skema.Types( IOPointType(..) ) where
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+import Text.JSON( JSON(..), Result(..), showJSON )
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 data IOPointType = InputPoint
                  | OutputPoint
                    deriving( Show, Eq )
 \end{code}
+
+\begin{code}
+instance JSON IOPointType where
+    showJSON InputPoint = showJSON "InputPoint"
+    showJSON OutputPoint = showJSON "OutputPoint"
+    readJSON _ = Error "not implemented"
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
