@@ -21,7 +21,7 @@ module Skema.Editor.PFPreviewWindow( showPFPreviewWindow ) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
+import Control.Concurrent.MVar( MVar, readMVar )
 import Graphics.UI.Gtk( widgetDestroy )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Graphics.UI.Gtk.Windows.Dialog
@@ -44,10 +44,9 @@ showPFPreviewWindow state = do
   Just xml <- xmlNew glade
   window <- xmlGetWidget xml castToDialog "main"
  
-  sks <- liftIO $ takeMVar state
+  sks <- liftIO $ readMVar state
   let json = prettyJSON . generateJSONString . extractProgramFlow . skemaDoc $ sks
-  liftIO $ putMVar state sks
-  
+   
   tv <- xmlGetWidget xml castToTextView "text_view"
   tbuffer <- textViewGetBuffer tv
   textBufferSetText tbuffer json

@@ -22,7 +22,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 \begin{code}
 import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
+import Control.Concurrent.MVar( MVar, takeMVar, putMVar, readMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
@@ -102,9 +102,9 @@ prepareMainWindow xml state = do
          (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
          liftIO $ putMVar state new_sks
   
-  sks <- liftIO $ takeMVar state
+  sks <- liftIO $ readMVar state
   let skdoc = skemaDoc sks
-  liftIO $ putMVar state sks
+
   ktree <- xmlGetWidget xml castToTreeView "kernels_tree"
   storeKernels <- treeStoreNew [ Node "library nodes" []
                                , Node "project nodes" 
