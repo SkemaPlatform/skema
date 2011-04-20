@@ -28,6 +28,10 @@ para el estado en Gtk se usa MVar para compartir estado entre eventos y StateM p
 *** Flujo de datos
 *** Punto de IO
 
+** Dudas
+*** Usar en JSON   
+(0,{'name':'uno',....})  o bien 'uno'={,....}
+
 ** Ayuda consultada
 *** Diseño de Xmonad
 *** Zipper como estructura básica
