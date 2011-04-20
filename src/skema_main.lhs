@@ -40,11 +40,13 @@ testDoc = emptySkemaDoc {
     where
       k1 = emptyKernel {
              name = "Adder" 
+           , body = "int id = get_global_id(0);\nz[id] = x[id] + y[id];"
            , iopoints = M.fromList [(0,IOPoint "x" InputPoint),
                                     (1,IOPoint "y" InputPoint),
                                     (2,IOPoint "z" OutputPoint)] }
       k2 = emptyKernel {
              name = "Scaler" 
+           , body = "int id = get_global_id(0);\nx2[id] = 2*input[id];\nx3[id] = 3*input[id];"
            , iopoints = M.fromList [(0,IOPoint "input" InputPoint),
                                     (1,IOPoint "x2" OutputPoint),
                                     (2,IOPoint "x3" OutputPoint)] }
