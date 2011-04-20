@@ -92,10 +92,6 @@ prepareMainWindow xml state = do
          liftIO $ putMVar state new_sks
          liftIO $ widgetQueueDraw canvas
          
-  _ <- canvas `on` leaveNotifyEvent $ tryEvent $ do
-         (mx,my) <- eventCoordinates
-         trace $ "out in" ++ show (mx,my)
-
   _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
          sks <- liftIO $ takeMVar state
