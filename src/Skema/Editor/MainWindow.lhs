@@ -33,7 +33,7 @@ import Graphics.UI.Gtk
     , DrawWindow, DrawingArea )
 import Graphics.UI.Gtk.Abstract.Widget
     ( widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent
-    , leaveNotifyEvent, motionNotifyEvent, widgetQueueDraw
+    , motionNotifyEvent, widgetQueueDraw
     , EventMask(..) )
 import Graphics.UI.Gtk.Gdk.EventM
     ( tryEvent, eventButton, eventClick, eventCoordinates
@@ -51,7 +51,7 @@ import Graphics.UI.Gtk.ModelView.TreeView
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
     ( castToToolButton, onToolButtonClicked )
 import Skema.Editor.SkemaState
-    ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
+    ( SkemaState(..), XS(..), io, runXS, statePutSelectedPos
     , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
     , stateGet, stateSelectElement, stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
