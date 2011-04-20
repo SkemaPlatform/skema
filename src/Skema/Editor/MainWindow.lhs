@@ -23,9 +23,11 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, takeMVar, putMVar )
-import qualified Data.IntMap as M( adjust, keys, insert )
+import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
+import Data.Tree( Tree(..), Forest(..) )
+import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk
     ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
     , DrawWindow, DrawingArea )
@@ -38,13 +40,21 @@ import Graphics.UI.Gtk.Gdk.EventM
     , MouseButton(..), Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
+import Graphics.UI.Gtk.ModelView
+    ( cellText, cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew
+    , treeViewColumnSetTitle, treeViewColumnPackStart )
+import Graphics.UI.Gtk.ModelView.TreeStore
+    ( TreeStore, treeStoreNew )
+import Graphics.UI.Gtk.ModelView.TreeView
+    ( TreeView, castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn
+    , treeViewSetModel )
 import Skema.Editor.SkemaState
     ( SkemaState(..), XS(..), io, runXS, trace, statePutSelectedPos
     , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
     , stateGet, stateSelectElement, stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), Node(..), SelectedElement(..)
+    ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
     , nodeTranslate, isIOPoint )
 import Skema.Util( Pos2D(..) )
 \end{code}
@@ -88,6 +98,16 @@ prepareMainWindow xml state = do
          sks <- liftIO $ takeMVar state
          (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
          liftIO $ putMVar state new_sks
+  
+  sks <- liftIO $ takeMVar state
+  let skdoc = skemaDoc sks
+  ktree <- xmlGetWidget xml castToTreeView "kernels_tree"
+  storeKernels <- treeStoreNew [ Node "library nodes" []
+                               , Node "project nodes" 
+                                          (extractKernelsTree skdoc)]
+  liftIO $ putMVar state sks
+  treeViewSetModel ktree storeKernels
+  setupKernelsView ktree storeKernels
   
   return ()
 \end{code}
@@ -178,6 +198,27 @@ drawCanvas canvas = do
                                   ox oy
                                   mx my
                                  )
+\end{code}
+
+\begin{code}
+setupKernelsView :: TreeView -> TreeStore String -> IO ()
+setupKernelsView view model = do
+  treeViewSetHeadersVisible view True
+
+  col <- treeViewColumnNew
+  renderer <- cellRendererTextNew
+  treeViewColumnSetTitle col "Name"
+  treeViewColumnPackStart col renderer True
+  cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
+
+  treeViewAppendColumn view col
+  
+  return ()
+\end{code}
+
+\begin{code}
+extractKernelsTree :: SkemaDoc -> Forest String
+extractKernelsTree skdoc = map (\a -> Node (name a) []) . M.elems . library $ skdoc
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
