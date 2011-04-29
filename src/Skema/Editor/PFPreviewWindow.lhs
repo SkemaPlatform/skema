@@ -22,13 +22,13 @@ module Skema.Editor.PFPreviewWindow( showPFPreviewWindow ) where
 \begin{code}
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, readMVar )
-import Graphics.UI.Gtk( widgetDestroy )
+import Graphics.UI.Gtk( on, widgetDestroy )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Graphics.UI.Gtk.Windows.Dialog
     ( ResponseId(..), castToDialog, dialogRun, dialogResponse )
 import Graphics.UI.Gtk.Multiline.TextView( castToTextView, textViewGetBuffer )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText )
-import Graphics.UI.Gtk.Buttons.Button( castToButton, onClicked )
+import Graphics.UI.Gtk.Buttons.Button( castToButton, buttonActivated )
 import Paths_skema( getDataFileName )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.SkemaDoc( extractProgramFlow )
@@ -53,7 +53,7 @@ showPFPreviewWindow state = do
 
   btn <- xmlGetWidget xml castToButton "button_accept"
 
-  _ <- onClicked btn $ do
+  _ <- btn `on` buttonActivated $ do
          dialogResponse window ResponseAccept
          widgetDestroy window
   

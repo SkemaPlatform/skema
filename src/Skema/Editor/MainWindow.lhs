@@ -47,7 +47,7 @@ import Graphics.UI.Gtk.ModelView.TreeStore
     ( TreeStore, treeStoreNew )
 import Graphics.UI.Gtk.ModelView.TreeView
     ( TreeView, castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn
-    , treeViewSetModel )
+    , treeViewSetModel, cursorChanged, treeViewGetCursor, treeViewExpandAll )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
     ( castToToolButton, onToolButtonClicked )
 import Skema.Editor.SkemaState
@@ -81,7 +81,15 @@ prepareMainWindow xml state = do
          SingleClick <- eventClick
          (mx,my) <- eventCoordinates
          sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ selectElement mx my canvas
+         (_,new_sks) <- liftIO $ runXS sks $ selectElement mx my
+         liftIO $ putMVar state new_sks
+
+  _ <- canvas `on` buttonPressEvent $ tryEvent $ do
+         RightButton <- eventButton
+         SingleClick <- eventClick
+         (mx,my) <- eventCoordinates
+         sks <- liftIO $ takeMVar state
+         (_,new_sks) <- liftIO $ runXS sks $ insertElement mx my canvas
          liftIO $ putMVar state new_sks
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
@@ -107,23 +115,34 @@ prepareMainWindow xml state = do
                                           (extractKernelsTree skdoc)]
   treeViewSetModel ktree storeKernels
   setupKernelsView ktree storeKernels
+  treeViewExpandAll ktree
 
+  _ <- ktree `on` cursorChanged $ do
+         (path, _) <- treeViewGetCursor ktree
+         when (not.null $ path) $ do
+                                print "test"
+         
   btn <- xmlGetWidget xml castToToolButton "mtb_pf_view"
-
   _ <- onToolButtonClicked btn $ showPFPreviewWindow state
   
   return ()
 \end{code}
 
 \begin{code}
-selectElement :: Double -> Double -> DrawingArea -> XS ()
-selectElement mx my canvas = do
+selectElement :: Double -> Double -> XS ()
+selectElement mx my = do
+  selElement <- stateSelectElement (Pos2D (mx,my))
+  statePutSelectedElem selElement
+  statePutSelectedPos (Pos2D (mx, my))
+\end{code}
+
+\begin{code}
+insertElement :: Double -> Double -> DrawingArea -> XS ()
+insertElement mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
   when (isNothing selElement) $ do
                                insertNewNode mx my
                                io $ widgetQueueDraw canvas
-  statePutSelectedElem selElement
-  statePutSelectedPos (Pos2D (mx, my))
 \end{code}
 
 \begin{code}
