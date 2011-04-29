@@ -39,3 +39,24 @@ para el estado en Gtk se usa MVar para compartir estado entre eventos y StateM p
 *** Como construir programas de Haskell
 http://www.haskell.org/haskellwiki/How_to_write_a_Haskell_program
 *** http://en.wikipedia.org/wiki/Dataflow_programming
+*** Codigo fuente de leksah
+
+
+
+* 2 Iteracion: Ejecucion de flujos
+
+Programa completo capaz de ejecutar un flujo
+
+** A realizar
+*** Servicio web que ejecute los flujos
+*** Llamar al servicio web desde el editor y desde programa
+*** Empezar a documentar más
+
+** Casos de Uso
+- [ ] Salvar proyecto
+- [ ] Cargar proyecto
+- [ ] Exportar flujo a fichero
+- [ ] Ejecutar flujo con datos simples
+
+** Dudas
+*** Probar Leksah para ver si se puede seguir desarrollando
