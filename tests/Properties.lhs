@@ -15,10 +15,43 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Properties( main ) where
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+import Test.QuickCheck( Arbitrary(..), quickCheck, arbitrarySizedIntegral )
+import Text.Printf( printf )
+import Skema.Util( Pos2D )
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 main :: IO ()
-main = return ()
+main = mapM_ (\(s,a) -> printf "%-25s: " s >> a) tests
 \end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Skema.Util tests
+
+\begin{code}
+instance Arbitrary Pos2D where
+  arbitrary = arbitrarySizedIntegral
+  shrink = undefined
+\end{code}
+
+\begin{code}
+prop_pos2d_signum :: Pos2D -> Bool
+prop_pos2d_signum pos = abs pos * signum pos == pos
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+tests :: [(String, IO ())]
+tests = [
+ ("Skema.Util: pos2D signum", quickCheck prop_pos2d_signum) ]
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
