@@ -10,6 +10,14 @@ Build-Type:    Simple
 Data-Dir:      data
 Data-Files:    *.glade
 
+flag coverage
+    description: Code coverage enabled
+    default: False
+
+flag testing
+    description: Testing mode
+    default: False
+
 Library
   hs-source-dirs:  src
   ghc-options:     -Wall
@@ -26,10 +34,24 @@ Library
     Skema.Editor.MainWindow
     Skema.Editor.Util
     Skema.Editor.SkemaState
+  if flag(testing)
+    buildable: False
+
 
 Executable skema
   hs-source-dirs:  src
   ghc-options:     -Wall
+  ghc-prof-options: -prof -auto-all
   Main-is:         skema_main.lhs
   Build-Depends:   base>=4, cairo>=0.10, gtk>=0.10, glade>=0.10, glib>=0.12,
                    mtl>=2.0, transformers>=0.2, containers>=0.3, json>=0.4
+  extensions: CPP
+
+  if flag(coverage)
+    ghc-options:   -fhpc
+
+  if flag(testing)
+    cpp-options:   -DTESTING
+    hs-source-dirs: src tests
+    build-depends: QuickCheck >= 2
+    ghc-options:   -fhpc -Werror

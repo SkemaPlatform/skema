@@ -16,11 +16,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Concurrent.MVar( newMVar )
+import Data.Version( showVersion )
 import qualified Data.IntMap as M( fromList )
 import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
-import Paths_skema( getDataFileName )
+import System.Environment( getProgName, getArgs )
+import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.Util( Pos2D(..) )
 import Skema.Types( IOPointType(..) )
@@ -28,6 +30,9 @@ import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
     , emptySkemaDoc, emptyKernel )
 import Skema.Editor.MainWindow( prepareMainWindow )
+#ifdef TESTING
+import qualified Properties( main )
+#endif
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +60,36 @@ testDoc = emptySkemaDoc {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 main :: IO ()
-main= do
+main = do
+    args <- getArgs
+    case args of
+        []                    -> launch
+        ["--help"]            -> usage
+        ["--version"]         -> putStrLn ("xmonad " ++ showVersion version)
+#ifdef TESTING
+        ("--run-tests":_)     -> Properties.main
+#endif
+        _                     -> fail "unrecognized flags"
+\end{code}
+
+\begin{code}
+usage :: IO ()
+usage = do
+    self <- getProgName
+    putStr . unlines $
+        concat ["Usage: ", self, " [OPTION]"] :
+        "Options:" :
+        "  --help                       Print this message" :
+        "  --version                    Print the version number" :
+#ifdef TESTING
+        "  --run-tests                  Run the test suite" :
+#endif
+        []
+\end{code}
+
+\begin{code}
+launch :: IO ()
+launch = do
   _ <- initGUI
   glade <- getDataFileName "skema.glade"
   Just xml <- xmlNew glade
