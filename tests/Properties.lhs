@@ -23,7 +23,7 @@ module Properties( main ) where
 \begin{code}
 import Test.QuickCheck( Arbitrary(..), quickCheck, arbitrarySizedIntegral )
 import Text.Printf( printf )
-import Skema.Util( Pos2D )
+import Skema.Util( Pos2D, prettyJSON )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,12 +46,23 @@ prop_pos2d_signum :: Pos2D -> Bool
 prop_pos2d_signum pos = abs pos * signum pos == pos
 \end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+prop_pos2d_sum :: Pos2D -> Pos2D -> Bool
+prop_pos2d_sum pa pb  = pa + pb == pb + pa
+\end{code}
+
+\begin{code}
+prop_pretty_length :: String -> Bool
+prop_pretty_length st = length st <= (length . prettyJSON) st
+\end{code}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 tests :: [(String, IO ())]
 tests = [
- ("Skema.Util: pos2D signum", quickCheck prop_pos2d_signum) ]
+ ("Skema.Util: pos2D signum", quickCheck prop_pos2d_signum),
+ ("Skema.Util: pos2D sum", quickCheck prop_pos2d_sum),
+ ("Skema.Util: prettyJSON", quickCheck prop_pretty_length) ]
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
