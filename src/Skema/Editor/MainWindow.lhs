@@ -122,7 +122,7 @@ prepareMainWindow xml state = do
   _ <- ktree `on` cursorChanged $ do
          (path, _) <- treeViewGetCursor ktree
          when (not.null $ path) $ do
-                                print "test"
+           print "test"
          
   btn <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn $ showPFPreviewWindow state
@@ -141,8 +141,6 @@ selectElement mx my = do
     let pointType = arrowIOPointType stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
     when (maybe False (==InputPoint) pointType) $ do
       let marrow = findInputArrow stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
-      io $ print marrow
-      io $ print selElement
       when (isJust marrow) (statePutSkemaDoc (deleteArrow stDoc (fromJust marrow)))
 \end{code}
 
@@ -151,8 +149,8 @@ insertElement :: Double -> Double -> DrawingArea -> XS ()
 insertElement mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
   when (isNothing selElement) $ do
-                               insertNewNode mx my
-                               io $ widgetQueueDraw canvas
+    insertNewNode mx my
+    io $ widgetQueueDraw canvas
 \end{code}
 
 \begin{code}
@@ -170,8 +168,8 @@ moveTo :: Double -> Double -> DrawingArea -> XS ()
 moveTo mx my canvas = do
   stElem <- stateGet selectedElem
   when (isJust stElem) $ do
-                        moveSelectedElement (Pos2D (mx,my)) (fromJust stElem)
-                        io $ widgetQueueDraw canvas
+    moveSelectedElement (Pos2D (mx,my)) (fromJust stElem)
+    io $ widgetQueueDraw canvas
 \end{code}
 
 \begin{code}
