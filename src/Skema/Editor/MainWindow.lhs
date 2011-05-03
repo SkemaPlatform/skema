@@ -182,9 +182,9 @@ releaseElement :: Double -> Double -> DrawingArea -> XS ()
 releaseElement mx my canvas = do
   stElem <- stateGet selectedElem
   when (isJust stElem) $ do
-                         releaseSelectedElement mx my (fromJust stElem)
-                         io $ widgetQueueDraw canvas
-                         statePutSelectedElem Nothing
+    releaseSelectedElement mx my (fromJust stElem)
+    io $ widgetQueueDraw canvas
+    statePutSelectedElem Nothing
 \end{code}
 
 \begin{code}
