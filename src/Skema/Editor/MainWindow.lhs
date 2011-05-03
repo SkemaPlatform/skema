@@ -58,7 +58,9 @@ import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
-    , nodeTranslate, isIOPoint )
+    , nodeTranslate, isIOPoint, arrowIOPointType, isInputPoint, findInputArrow
+    , deleteArrow )
+import Skema.Types( IOPointType(..) )
 import Skema.Util( Pos2D(..) )
 \end{code}
 
@@ -134,6 +136,14 @@ selectElement mx my = do
   selElement <- stateSelectElement (Pos2D (mx,my))
   statePutSelectedElem selElement
   statePutSelectedPos (Pos2D (mx, my))
+  when (maybe False isIOPoint selElement) $ do
+    stDoc <- stateGet skemaDoc
+    let pointType = arrowIOPointType stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
+    when (maybe False (==InputPoint) pointType) $ do
+      let marrow = findInputArrow stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
+      io $ print marrow
+      io $ print selElement
+      when (isJust marrow) (statePutSkemaDoc (deleteArrow stDoc (fromJust marrow)))
 \end{code}
 
 \begin{code}

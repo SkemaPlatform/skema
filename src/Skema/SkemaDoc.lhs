@@ -297,10 +297,15 @@ isSameArrow pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
 \begin{code}
 isSameArrowPoint :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
 isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
-    | (inode==pn0) && (ipoint==pp0) = True
     | (enode==pn0) && (epoint==pp0) = True
-    | (inode==pn1) && (ipoint==pp1) = True
     | (enode==pn1) && (epoint==pp1) = True
+    | otherwise = False
+\end{code}
+
+\begin{code}
+hasInputArrowPoint :: Int -> Int -> NodeArrow -> Bool
+hasInputArrowPoint pn pp (NodeArrow inode ipoint enode epoint)
+    | (enode==pn) && (epoint==pp) = True
     | otherwise = False
 \end{code}
 
@@ -310,9 +315,11 @@ validArrow skdoc ki ji kf jf
     | ki == kf = False
     | (not . null) samepoints = False
     | isJust initType && isJust finalType = fromJust initType /= fromJust finalType
+    | (not . null) samearrows = False
     | otherwise = True
     where
       samepoints = filter (isSameArrowPoint ki ji kf jf) (arrows skdoc)
+      samearrows = filter (isSameArrow ki ji kf jf) (arrows skdoc)
       initType = arrowIOPointType skdoc ki ji
       finalType = arrowIOPointType skdoc kf jf
 \end{code}
@@ -329,7 +336,23 @@ createArrow skdoc ki ji kf jf = do
 \begin{code}
 sortArrow :: IOPointType -> a -> IOPointType -> a -> (a,a)
 sortArrow OutputPoint initial _ end = (initial,end)
-sortArrow _ initial _ end = (initial,end)
+sortArrow _ initial _ end = (end,initial)
+\end{code}
+
+\begin{code}
+findInputArrow :: SkemaDoc -> Int -> Int -> Maybe NodeArrow
+findInputArrow skdoc nidx ioidx = if (not.null) samearrows
+                               then Just $ head samearrows
+                               else Nothing
+    where
+      samearrows = filter (hasInputArrowPoint nidx ioidx) (arrows skdoc)
+\end{code}
+
+\begin{code}
+deleteArrow :: SkemaDoc -> NodeArrow -> SkemaDoc
+deleteArrow skdoc arr = skdoc { arrows = filteredArrows }
+    where
+      filteredArrows = filter (/=arr) (arrows skdoc)
 \end{code}
 
 \begin{code}

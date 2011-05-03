@@ -40,7 +40,7 @@ import qualified Properties( main )
 testDoc :: SkemaDoc
 testDoc = emptySkemaDoc {
             library = M.fromList [(0,k1),(1,k2)]
-          , nodes = M.fromList [(0,NodeKernel (Pos2D (210,20)) 0),(1,NodeKernel (Pos2D (100,110)) 0)]
+          , nodes = M.fromList [(0,NodeKernel (Pos2D (150,20)) 0),(1,NodeKernel (Pos2D (50,110)) 0)]
           , arrows = [NodeArrow 1 2 0 1] }
     where
       k1 = emptyKernel {
