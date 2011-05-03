@@ -141,7 +141,8 @@ emptyKernel = Kernel "" "" MI.empty
 
 \begin{code}
 data SelectedElement = SeNODE !Int
-                     | SeIOP !Int !Int
+                     | SeIOP { seIOPNode :: !Int
+                             , seIOPPoint :: !Int }
                        deriving( Show, Eq )
 \end{code}
 
@@ -193,7 +194,7 @@ data NodeArrow = NodeArrow
     , outputPoint :: !Int
     , inputNode :: !Int
     , inputPoint :: !Int }
-    deriving( Show )
+    deriving( Eq, Show )
 \end{code}
 
 \begin{code}
