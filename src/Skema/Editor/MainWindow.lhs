@@ -58,7 +58,7 @@ import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
-    , nodeTranslate, isIOPoint, arrowIOPointType, isInputPoint, findInputArrow
+    , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
     , deleteArrow )
 import Skema.Types( IOPointType(..) )
 import Skema.Util( Pos2D(..) )

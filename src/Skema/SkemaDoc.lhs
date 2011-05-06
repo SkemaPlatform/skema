@@ -296,7 +296,7 @@ isSameArrow pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
 
 \begin{code}
 isSameArrowPoint :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
-isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
+isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow _ _ enode epoint)
     | (enode==pn0) && (epoint==pp0) = True
     | (enode==pn1) && (epoint==pp1) = True
     | otherwise = False
@@ -304,7 +304,7 @@ isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
 
 \begin{code}
 hasInputArrowPoint :: Int -> Int -> NodeArrow -> Bool
-hasInputArrowPoint pn pp (NodeArrow inode ipoint enode epoint)
+hasInputArrowPoint pn pp (NodeArrow _ _ enode epoint)
     | (enode==pn) && (epoint==pp) = True
     | otherwise = False
 \end{code}
