@@ -62,10 +62,11 @@ testDoc = emptySkemaDoc {
 main :: IO ()
 main = do
     args <- getArgs
+    self <- getProgName
     case args of
         []                    -> launch
         ["--help"]            -> usage
-        ["--version"]         -> putStrLn ("xmonad " ++ showVersion version)
+        ["--version"]         -> putStrLn (self ++ " " ++ showVersion version)
 #ifdef TESTING
         ("--run-tests":_)     -> Properties.main
 #endif
