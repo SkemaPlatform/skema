@@ -21,8 +21,9 @@ flag testing
 Library
   hs-source-dirs:  src
   ghc-options:     -Wall
-  Build-Depends:   base>=4, mtl>=2.0, transformers>=0.2, containers>=0.3, 
-                   cairo>=0.10, gtk>=0.10, glade>=0.10, json>=0.4, glib>=0.12
+  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, 
+                   containers==0.3.*, json==0.4.*, 
+                   cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*
   Exposed-modules: 
     Skema
     Skema.Util
@@ -43,8 +44,9 @@ Executable skema
   ghc-options:     -Wall
   ghc-prof-options: -prof -auto-all
   Main-is:         skema_main.lhs
-  Build-Depends:   base>=4, cairo>=0.10, gtk>=0.10, glade>=0.10, glib>=0.12,
-                   mtl>=2.0, transformers>=0.2, containers>=0.3, json>=0.4
+  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*,
+                   containers==0.3.*, json==0.4.*, 
+                   cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*
   extensions: CPP
 
   if flag(coverage)
