@@ -30,9 +30,6 @@ import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
     , emptySkemaDoc, emptyKernel )
 import Skema.Editor.MainWindow( prepareMainWindow )
-#ifdef TESTING
-import qualified Properties( main )
-#endif
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,9 +64,6 @@ main = do
         []                    -> launch
         ["--help"]            -> usage
         ["--version"]         -> putStrLn (self ++ " " ++ showVersion version)
-#ifdef TESTING
-        ("--run-tests":_)     -> Properties.main
-#endif
         _                     -> fail "unrecognized flags"
 \end{code}
 
@@ -82,9 +76,6 @@ usage = do
         "Options:" :
         "  --help                       Print this message" :
         "  --version                    Print the version number" :
-#ifdef TESTING
-        "  --run-tests                  Run the test suite" :
-#endif
         []
 \end{code}
 
