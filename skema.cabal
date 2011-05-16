@@ -1,7 +1,7 @@
 Name:          skema
-Version:       0.1.0
+Version:       0.2.0
 Cabal-Version: >=1.8
-Description:   skema prototype
+Description:   Skema Platform Editor
 License:       GPL
 License-file:  LICENSE
 Author:        Luis Cabellos
