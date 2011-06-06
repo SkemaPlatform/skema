@@ -49,7 +49,7 @@ testDoc = emptySkemaDoc {
       k2 = emptyKernel {
              name = "Scaler" 
            , body = "int id = get_global_id(0);\nx2[id] = 2*input[id];\nx3[id] = 3*input[id];"
-           , iopoints = M.fromList [(0,IOPoint "input" IOfloat InputPoint),
+           , iopoints = M.fromList [(0,IOPoint "input" IOint InputPoint),
                                     (1,IOPoint "x2" IOfloat OutputPoint),
                                     (2,IOPoint "x3" IOfloat OutputPoint)] }
 \end{code}
