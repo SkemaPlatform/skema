@@ -56,7 +56,56 @@ data IOPointDataType = IOchar | IOuchar
                      | IOint16 | IOuint16
                      | IOlong16 | IOulong16
                      | IOfloat16
-                     deriving( Show, Eq )
+                     deriving( Eq )
+\end{code}
+
+\begin{code}
+instance Show IOPointDataType where
+  show IOchar = "char"
+  show IOuchar = "uchar"
+  show IOshort = "short"
+  show IOushort = "ushort"
+  show IOint = "int"
+  show IOuint = "uint"
+  show IOlong = "long"
+  show IOulong = "ulong"
+  show IOfloat = "float"
+  show IOchar2 = "char2"
+  show IOuchar2 = "uchar2"
+  show IOshort2 = "short2"
+  show IOushort2 = "ushort2"
+  show IOint2 = "int2"
+  show IOuint2 = "uint2"
+  show IOlong2 = "long2"
+  show IOulong2 = "ulong2"
+  show IOfloat2 = "float2"
+  show IOchar4 = "char4"
+  show IOuchar4 = "uchar4"
+  show IOshort4 = "short4"
+  show IOushort4 = "ushort4"
+  show IOint4 = "int4"
+  show IOuint4 = "uint4"
+  show IOlong4 = "long4"
+  show IOulong4 = "ulong4"
+  show IOfloat4 = "float4"
+  show IOchar8 = "char8"
+  show IOuchar8 = "uchar8"
+  show IOshort8 = "short8"
+  show IOushort8 = "ushort8"
+  show IOint8 = "int8"
+  show IOuint8 = "uint8"
+  show IOlong8 = "long8"
+  show IOulong8 = "ulong8"
+  show IOfloat8 = "float8"
+  show IOchar16 = "char16"
+  show IOuchar16 = "uchar16"
+  show IOshort16 = "short16"
+  show IOushort16 = "ushort16"
+  show IOint16 = "int16"
+  show IOuint16 = "uint16"
+  show IOlong16 = "long16"
+  show IOulong16 = "ulong16"
+  show IOfloat16 = "float16"
 \end{code}
 
 \begin{code}
