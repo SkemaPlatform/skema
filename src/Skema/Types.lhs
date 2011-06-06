@@ -15,7 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Types( IOPointType(..) ) where
+module Skema.Types( IOPointType(..), IOPointDataType(..) ) where
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,6 +28,35 @@ import Text.JSON( JSON(..), Result(..), showJSON )
 data IOPointType = InputPoint
                  | OutputPoint
                    deriving( Show, Eq )
+\end{code}
+
+\begin{code}
+data IOPointDataType = IOchar | IOuchar
+                     | IOshort | IOushort
+                     | IOint | IOuint
+                     | IOlong | IOulong
+                     | IOfloat
+                     | IOchar2 | IOuchar2
+                     | IOshort2 | IOushort2
+                     | IOint2 | IOuint2
+                     | IOlong2 | IOulong2
+                     | IOfloat2
+                     | IOchar4 | IOuchar4
+                     | IOshort4 | IOushort4
+                     | IOint4 | IOuint4
+                     | IOlong4 | IOulong4
+                     | IOfloat4
+                     | IOchar8 | IOuchar8
+                     | IOshort8 | IOushort8
+                     | IOint8 | IOuint8
+                     | IOlong8 | IOulong8
+                     | IOfloat8
+                     | IOchar16 | IOuchar16
+                     | IOshort16 | IOushort16
+                     | IOint16 | IOuint16
+                     | IOlong16 | IOulong16
+                     | IOfloat16
+                     deriving( Show, Eq )
 \end{code}
 
 \begin{code}

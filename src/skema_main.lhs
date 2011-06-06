@@ -25,7 +25,7 @@ import System.Environment( getProgName, getArgs )
 import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.Util( Pos2D(..) )
-import Skema.Types( IOPointType(..) )
+import Skema.Types( IOPointType(..), IOPointDataType(..) )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
     , emptySkemaDoc, emptyKernel )
@@ -43,15 +43,15 @@ testDoc = emptySkemaDoc {
       k1 = emptyKernel {
              name = "Adder" 
            , body = "int id = get_global_id(0);\nz[id] = x[id] + y[id];"
-           , iopoints = M.fromList [(0,IOPoint "x" InputPoint),
-                                    (1,IOPoint "y" InputPoint),
-                                    (2,IOPoint "z" OutputPoint)] }
+           , iopoints = M.fromList [(0,IOPoint "x" IOfloat InputPoint),
+                                    (1,IOPoint "y" IOfloat InputPoint),
+                                    (2,IOPoint "z" IOfloat OutputPoint)] }
       k2 = emptyKernel {
              name = "Scaler" 
            , body = "int id = get_global_id(0);\nx2[id] = 2*input[id];\nx3[id] = 3*input[id];"
-           , iopoints = M.fromList [(0,IOPoint "input" InputPoint),
-                                    (1,IOPoint "x2" OutputPoint),
-                                    (2,IOPoint "x3" OutputPoint)] }
+           , iopoints = M.fromList [(0,IOPoint "input" IOfloat InputPoint),
+                                    (1,IOPoint "x2" IOfloat OutputPoint),
+                                    (2,IOPoint "x3" IOfloat OutputPoint)] }
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

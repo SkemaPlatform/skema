@@ -28,7 +28,8 @@ import qualified Data.IntMap as MI
 import qualified Data.Map as M( fromList )
 import Skema.Util
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
-import Skema.Types( IOPointType(..) )
+import Skema.Types
+  ( IOPointType(..), IOPointDataType(..) )
 import Skema.ProgramFlow
     ( ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..)
     , emptyProgramFlow )
@@ -117,6 +118,7 @@ nodeHeadColor = const (0.51,0.51,0.56)
 \begin{code}
 data IOPoint = IOPoint
     { iopName :: !String 
+    , iopDataType :: !IOPointDataType
     , iopType :: !IOPointType }
     deriving( Show )
 \end{code}
