@@ -61,8 +61,13 @@ data IOPointDataType = IOchar | IOuchar
 
 \begin{code}
 instance JSON IOPointType where
-    showJSON InputPoint = showJSON "InputPoint"
-    showJSON OutputPoint = showJSON "OutputPoint"
+    showJSON = showJSON . show
+    readJSON _ = Error "not implemented"
+\end{code}
+
+\begin{code}
+instance JSON IOPointDataType where
+    showJSON = showJSON . show
     readJSON _ = Error "not implemented"
 \end{code}
 

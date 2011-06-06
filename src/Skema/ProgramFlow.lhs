@@ -27,20 +27,22 @@ import qualified Data.IntMap as MI( IntMap, empty )
 import qualified Data.Map as M( Map, empty, assocs )
 import Text.JSON
     ( Result(..), JSON(..), JSValue(..), makeObj, encode )
-import Skema.Types( IOPointType(..) )
+import Skema.Types( IOPointType(..), IOPointDataType(..) )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 data PFIOPoint = PFIOPoint
-    { pfIOPType :: !IOPointType }
+    { pfIOPDataType :: !IOPointDataType 
+    , pfIOPType :: !IOPointType }
     deriving( Show )
 \end{code}
 
 \begin{code}
 instance JSON PFIOPoint where
     showJSON pfiop = makeObj 
-                     [("type", showJSON . pfIOPType $ pfiop)]
+                     [ ("data", (showJSON . pfIOPDataType) pfiop )
+                     , ("type", (showJSON . pfIOPType) pfiop)]
     readJSON _ = Error "not implemented"
 \end{code}
 

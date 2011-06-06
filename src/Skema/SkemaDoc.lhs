@@ -386,7 +386,7 @@ toPFNode kernels node = do
 
 \begin{code}
 toPFIOPoint :: IOPoint -> PFIOPoint
-toPFIOPoint = PFIOPoint . iopType
+toPFIOPoint p = PFIOPoint (iopDataType p) (iopType p)
 \end{code}
 
 \begin{code}
