@@ -56,6 +56,7 @@ import Skema.Editor.SkemaState
     , stateGet, stateSelectElement, stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
+import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
     , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
@@ -124,8 +125,11 @@ prepareMainWindow xml state = do
          when (not.null $ path) $ do
            print "test"
          
-  btn <- xmlGetWidget xml castToToolButton "mtb_pf_view"
-  _ <- onToolButtonClicked btn $ showPFPreviewWindow state
+  btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
+  _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
+  
+  btn_test <- xmlGetWidget xml castToToolButton "mtb_test"
+  _ <- onToolButtonClicked btn_test $ showNodeCLWindow state
   
   return ()
 \end{code}
