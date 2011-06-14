@@ -8,7 +8,7 @@ Author:        Luis Cabellos
 Maintainer:    cabellos@ifca.unican.es
 Build-Type:    Simple
 Data-Dir:      data
-Data-Files:    *.glade, *.skm
+Data-Files:    *.glade, *.skm, *.lang
 
 flag coverage
     description: Code coverage enabled
