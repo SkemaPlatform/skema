@@ -16,15 +16,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 module Skema.Editor.Util
-    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
-    , calcFontHeight )
+    ( roundedRectanglePath, drawLine, circlePath, drawFill, drawFillStroke
+    , showTextOn, calcFontHeight )
     where
 \end{code}
 
 \begin{code}
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, setSourceRGB, moveTo, newPath, closePath, arc, showText, stroke
-    , fill, fillPreserve, textExtents, textExtentsHeight )
+    , fill, fillPreserve, textExtents, textExtentsHeight, setLineWidth )
 import Skema.Util( RGBColor, deg2rad )
 \end{code}
 
@@ -42,6 +42,16 @@ roundedRectanglePath px py wid hei rad = do
   Cr.arc (px+rad) (py+hei-rad) rad (deg2rad 90) (deg2rad 180)
   Cr.arc (px+rad) (py+rad) rad (deg2rad 180) (deg2rad $ -90)
   Cr.closePath
+\end{code}
+
+\begin{code}
+drawLine :: Double -- ^ width
+         -> RGBColor -- ^ fill color
+         -> Cr.Render ()
+drawLine w (rf,gf,bf) = do
+  Cr.setLineWidth w
+  Cr.setSourceRGB rf gf bf
+  Cr.stroke
 \end{code}
 
 \begin{code}

@@ -20,7 +20,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Control.Monad( when )
+import Control.Monad( when, unless )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, takeMVar, putMVar, readMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, elems )
@@ -122,8 +122,7 @@ prepareMainWindow xml state = do
 
   _ <- ktree `on` cursorChanged $ do
          (path, _) <- treeViewGetCursor ktree
-         when (not.null $ path) $ do
-           print "test"
+         unless (null path) $ print "test"
          
   btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state

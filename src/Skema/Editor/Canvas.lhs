@@ -25,7 +25,7 @@ import Data.Maybe( isJust, isJust, fromJust )
 import qualified Data.IntMap as M( elems )
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA
-    , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo, stroke
+    , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo
     , selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo
     , setDash )
 import Skema.SkemaDoc
@@ -36,7 +36,7 @@ import Skema.SkemaDoc
 import Skema.Util( Pos2D(..), deg2rad, RGBColor, posx, posy )
 import Skema.Editor.Util
     ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
-    , calcFontHeight )
+    , calcFontHeight, drawLine )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,9 +137,7 @@ drawSelected _ _ (Just (SeIOP _ _)) ox oy mx my = do
   Cr.setDash [10,5] 0
   Cr.moveTo ox oy
   Cr.lineTo mx my
-  Cr.setLineWidth 1
-  Cr.setSourceRGB 0.7 0.7 0.7
-  Cr.stroke
+  drawLine 1 (0.7,0.7,0.7)
 drawSelected _ _ _ _ _ _ _ = return ()
 \end{code}
 
@@ -148,9 +146,7 @@ drawArrow :: SkemaDoc -> NodeArrow -> Cr.Render ()
 drawArrow skdoc arrow = when (isJust outpos && isJust inpos) $ do
                           Cr.moveTo px0 py0
                           Cr.curveTo (px0 + 50) py0 (px3 - 50) py3 px3 py3
-                          Cr.setLineWidth 1
-                          Cr.setSourceRGB 0.7 0.7 0.7
-                          Cr.stroke
+                          drawLine 1 (0.7,0.7,0.7)
       where
         outpos = arrowPosition skdoc (outputNode arrow) (outputPoint arrow)
         inpos = arrowPosition skdoc (inputNode arrow) (inputPoint arrow)

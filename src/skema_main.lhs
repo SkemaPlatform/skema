@@ -72,11 +72,10 @@ usage :: IO ()
 usage = do
     self <- getProgName
     putStr . unlines $
-        concat ["Usage: ", self, " [OPTION]"] :
-        "Options:" :
-        "  --help                       Print this message" :
-        "  --version                    Print the version number" :
-        []
+        [concat ["Usage: ", self, " [OPTION]"],
+         "Options:",
+         "  --help                       Print this message",
+         "  --version                    Print the version number"]
 \end{code}
 
 \begin{code}
