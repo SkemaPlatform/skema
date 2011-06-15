@@ -24,7 +24,6 @@ import Data.Maybe( isNothing )
 import Control.Monad( when )
 import Control.Concurrent.MVar( MVar )
 import Skema.Editor.SkemaState( SkemaState(..) )
-import Graphics.UI.Gtk.Builder( builderNew, builderAddFromFile )
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.SourceView
 import Paths_skema( getDataDir )

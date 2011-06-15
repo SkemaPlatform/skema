@@ -22,7 +22,7 @@ Library
   hs-source-dirs:  src
   ghc-options:     -Wall
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, random==1.0.*, 
-                   containers==0.3.*, json==0.4.*, HTTP==4000.1.*, 
+                   containers==0.4.*, json==0.4.*, HTTP==4000.1.*, 
                    network==2.3.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, 
                    glib==0.12.*, gtksourceview2==0.12.*
   Exposed-modules: 
@@ -46,7 +46,7 @@ Executable skema
   ghc-prof-options: -prof -auto-all
   Main-is:         skema_main.lhs
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*,
-                   containers==0.3.*, json==0.4.*, 
+                   containers==0.4.*, json==0.4.*, 
                    cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*,
                    gtksourceview2==0.12.*
 
@@ -80,7 +80,7 @@ Executable skema-test
   ghc-options:     -Wall -fhpc -Werror
   Main-is:         skema_test.lhs
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*,
-                   containers==0.3.*, json==0.4.*, QuickCheck >= 2
+                   containers==0.4.*, json==0.4.*, QuickCheck >= 2
   cpp-options:   -DTESTING
 
   if flag(testing)
