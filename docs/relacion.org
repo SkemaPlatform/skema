@@ -60,3 +60,14 @@ Programa completo capaz de ejecutar un flujo
 
 ** Dudas
 *** Probar Leksah para ver si se puede seguir desarrollando
+
+* Apendice: Instalacion
+
+** paquetes a instalar adicionales:
+gtk2hs-buildtools
+libcairo2-dev
+libpango1.0-dev
+libxml2-dev
+libgtk2.0-dev
+libglade2-dev
+libgtksourceview2.0-dev
