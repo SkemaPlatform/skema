@@ -25,7 +25,16 @@ import Control.Monad( when )
 import Control.Concurrent.MVar( MVar )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Graphics.UI.Gtk
+  ( containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew )
+import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackEnd )
+import Graphics.UI.Gtk.Windows.Dialog
+  ( dialogNew, dialogRun, dialogGetUpper )
 import Graphics.UI.Gtk.SourceView
+  ( sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath
+  , sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage
+  , sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme
+  , sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme
+  , sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer )
 import Paths_skema( getDataDir )
 \end{code}
 
