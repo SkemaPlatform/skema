@@ -34,6 +34,7 @@ import Paths_skema( getDataDir )
 showNodeCLWindow :: MVar SkemaState -> IO ()
 showNodeCLWindow state = do
   window <- dialogNew
+  widgetSetSizeRequest window 640 480
   
   datadir <- getDataDir
   
