@@ -16,10 +16,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Data.Version( showVersion )
+import Data.Maybe( isJust, fromJust )
 import System.Environment( getProgName, getArgs )
 import System.Console.GetOpt( 
   ArgOrder(..), OptDescr(..), ArgDescr(..), getOpt, usageInfo )
 import System.Exit( exitSuccess )
+import Skema.Client( sendSkema )
 import Paths_skema( version )
 \end{code}
 
@@ -49,17 +51,17 @@ options = [Option "h" ["help"] (NoArg showUsage) "show usage"
 \begin{code}
 main :: IO ()
 main = do
-    args <- getArgs
-    case getOpt RequireOrder options args of
-      ([], [], []) -> do
-        _ <- showUsage defaultOptions
-        exitSuccess
-      (actions, (skmf:[]), []) -> do
-        opts <- foldl (>>=) (return defaultOptions) actions
-        launch $ opts { skemafile = Just skmf }
-      (_,_, errs) -> do
-        h <- showHeader
-        error $ concat errs ++ usageInfo h options
+  args <- getArgs
+  case getOpt RequireOrder options args of
+    ([], [], []) -> do
+      _ <- showUsage defaultOptions
+      exitSuccess
+    (actions, (skmf:[]), []) -> do
+      opts <- foldl (>>=) (return defaultOptions) actions
+      launch $ opts { skemafile = Just skmf }
+    (_,_, errs) -> do
+      h <- showHeader
+      error $ concat errs ++ usageInfo h options
 \end{code}
 
 \begin{code}
@@ -101,6 +103,12 @@ setOutputFile file opts = return $ opts {
 launch :: Options -> IO ()
 launch opts = do
   print opts
+  if isJust.skemafile $ opts 
+    then do
+      skemadata <- readFile.fromJust.skemafile $ opts
+      key <- sendSkema "http://tesla01.ifca.es:8080" skemadata
+      print key
+    else print "No skema file"
   return ()
 \end{code}
 
