@@ -106,8 +106,11 @@ launch opts = do
   if isJust.skemafile $ opts 
     then do
       skemadata <- readFile.fromJust.skemafile $ opts
-      key <- sendSkema "http://tesla01.ifca.es:8080" skemadata
-      print key
+      sendResult <- sendSkema "http://tesla01.ifca.es:8080" skemadata
+      case sendResult of
+        Just key -> do
+          putStrLn key
+        Nothing -> print "Error sending program"
     else print "No skema file"
   return ()
 \end{code}
