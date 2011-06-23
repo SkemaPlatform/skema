@@ -29,7 +29,6 @@ Library
     Skema
     Skema.Network
     Skema.Util
-    Skema.Types
     Skema.SkemaDoc
     Skema.ProgramFlow
     Skema.Block.Function
