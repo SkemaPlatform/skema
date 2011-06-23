@@ -24,7 +24,7 @@ Library
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, random==1.0.*, 
                    containers==0.4.*, json==0.4.*, HTTP==4000.1.*, 
                    network==2.3.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, 
-                   glib==0.12.*, gtksourceview2==0.12.*
+                   glib==0.12.*, gtksourceview2==0.12.*, skema-common==0.1.*
   Exposed-modules: 
     Skema
     Skema.Network
@@ -48,7 +48,7 @@ Executable skema
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*,
                    containers==0.4.*, json==0.4.*, 
                    cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*,
-                   gtksourceview2==0.12.*
+                   gtksourceview2==0.12.*,skema-common==0.1.*
 
   if flag(coverage)
     ghc-options:   -fhpc
