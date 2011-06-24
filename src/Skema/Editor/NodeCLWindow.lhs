@@ -41,7 +41,7 @@ import Paths_skema( getDataDir )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 showNodeCLWindow :: MVar SkemaState -> IO ()
-showNodeCLWindow state = do
+showNodeCLWindow _ = do
   window <- dialogNew
   widgetSetSizeRequest window 640 480
   

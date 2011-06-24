@@ -25,7 +25,8 @@ module Skema.Editor.Util
 import qualified Graphics.Rendering.Cairo as Cr
     ( Render, setSourceRGB, moveTo, newPath, closePath, arc, showText, stroke
     , fill, fillPreserve, textExtents, textExtentsHeight, setLineWidth )
-import Skema.Util( RGBColor, deg2rad )
+import Skema.Editor.Types( RGBColor )
+import Skema.Math( deg2rad )
 \end{code}
 
 \begin{code}

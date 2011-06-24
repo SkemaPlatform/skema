@@ -24,7 +24,7 @@ import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import System.Environment( getProgName, getArgs )
 import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..) )
-import Skema.Util( Pos2D(..) )
+import Skema.Editor.Types( Pos2D(..) )
 import Skema.Types( IOPointType(..), IOPointDataType(..) )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)

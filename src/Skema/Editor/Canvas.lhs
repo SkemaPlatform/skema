@@ -33,7 +33,8 @@ import Skema.SkemaDoc
     , nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
     , nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition
     , nodeIOPPosition, isInputPoint, iopName, iopDataType )
-import Skema.Util( Pos2D(..), deg2rad, RGBColor, posx, posy )
+import Skema.Math( deg2rad )
+import Skema.Editor.Types( Pos2D(..), RGBColor, posx, posy )
 import Skema.Editor.Util
     ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
     , calcFontHeight, drawLine )

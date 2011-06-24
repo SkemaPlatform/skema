@@ -62,7 +62,7 @@ import Skema.SkemaDoc
     , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
     , deleteArrow )
 import Skema.Types( IOPointType(..) )
-import Skema.Util( Pos2D(..) )
+import Skema.Editor.Types( Pos2D(..) )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

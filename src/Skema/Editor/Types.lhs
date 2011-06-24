@@ -16,8 +16,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
-module Skema.Util
-    ( Pos2D(..), RGBColor, Rect(..), Circle(..), deg2rad, inside, posx, posy ) 
+module Skema.Editor.Types
+    ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy ) 
         where
 \end{code}
 
@@ -73,12 +73,6 @@ data Circle = Circle
 class Area a where
     -- | Check if a point is inside an area.
     inside :: Double -> Double -> a -> Bool
-\end{code}
-
-\begin{code}
--- | 'deg2rad' converts an arc measure from degree units to radian units
-deg2rad :: (Floating a) => a -> a
-deg2rad d = d * (pi / 180)
 \end{code}
 
 \begin{code}

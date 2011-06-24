@@ -26,7 +26,7 @@ import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI
     ( IntMap, empty, lookup, elems, assocs, fromList )
 import qualified Data.Map as M( fromList )
-import Skema.Util
+import Skema.Editor.Types
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
 import Skema.Types
   ( IOPointType(..), IOPointDataType(..) )

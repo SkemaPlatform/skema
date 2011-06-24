@@ -28,12 +28,12 @@ Library
   Exposed-modules: 
     Skema
     Skema.Network
-    Skema.Util
     Skema.SkemaDoc
     Skema.Block.Function
     Skema.Editor.Canvas
     Skema.Editor.MainWindow
     Skema.Editor.Util
+    Skema.Editor.Types
     Skema.Editor.SkemaState
   if flag(testing)
     buildable: False
