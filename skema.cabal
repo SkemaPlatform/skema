@@ -30,7 +30,6 @@ Library
     Skema.Network
     Skema.Util
     Skema.SkemaDoc
-    Skema.ProgramFlow
     Skema.Block.Function
     Skema.Editor.Canvas
     Skema.Editor.MainWindow
