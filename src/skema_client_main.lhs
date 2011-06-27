@@ -21,7 +21,11 @@ import System.Environment( getProgName, getArgs )
 import System.Console.GetOpt( 
   ArgOrder(..), OptDescr(..), ArgDescr(..), getOpt, usageInfo )
 import System.Exit( exitSuccess )
+import System.Locale.SetLocale( Category(..), setLocale )
+import Text.I18N.GetText( bindTextDomain, textDomain )
+
 import Skema.Client( sendSkema )
+import Skema.Util( __ )
 import Paths_skema( version )
 \end{code}
 
@@ -51,6 +55,10 @@ options = [Option "h" ["help"] (NoArg showUsage) "show usage"
 \begin{code}
 main :: IO ()
 main = do
+  _ <- setLocale LC_ALL (Just "") 
+  _ <- bindTextDomain __MESSAGE_CATALOG_DOMAIN__ (Just __MESSAGE_CATALOG_DIR__)
+  _ <- textDomain (Just __MESSAGE_CATALOG_DOMAIN__)
+  
   args <- getArgs
   case getOpt RequireOrder options args of
     ([], [], []) -> do
@@ -68,7 +76,7 @@ main = do
 showHeader :: IO String
 showHeader = do
   self <- getProgName
-  return $ "Usage: " ++ self ++ " [Options] skemafile"
+  return $ (__"Usage: ") ++ self ++ (__" [Options] skemafile")
 \end{code}
 
 \begin{code}
@@ -110,8 +118,8 @@ launch opts = do
       case sendResult of
         Just key -> do
           putStrLn key
-        Nothing -> print "Error sending program"
-    else print "No skema file"
+        Nothing -> print (__ "Error sending program")
+    else print (__ "No skema file")
   return ()
 \end{code}
 

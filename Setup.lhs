@@ -15,6 +15,6 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Distribution.Simple
-main = defaultMain
+import Distribution.Simple.I18N.GetText
+main = gettextDefaultMain
 \end{code}

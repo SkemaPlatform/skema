@@ -1,0 +1,30 @@
+# Translation file
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-01-13 06:05-0800\n"
+"PO-Revision-Date: 2011-06-27 17:42+0200\n"
+"Last-Translator: Luis Cabellos <cabellos@ozzy.ifca.es>\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/skema_client_main.lhs:0
+msgid "Usage: "
+msgstr "Usage: "
+
+#: src/skema_client_main.lhs:0
+msgid " [Options] skemafile"
+msgstr " [Options] skemafile"
+
+#: src/skema_client_main.lhs:0
+msgid "Error sending program"
+msgstr "Error sending program"
+
+#: src/skema_client_main.lhs:0
+msgid "No skema file"
+msgstr "No skema file"
