@@ -24,7 +24,7 @@ import System.Exit( exitSuccess )
 import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain )
 
-import Skema.Client( sendSkema )
+import Skema.Client( sendSkema, createRun )
 import Skema.Util( __ )
 import Paths_skema( version )
 \end{code}
@@ -118,6 +118,8 @@ launch opts = do
       case sendResult of
         Just key -> do
           putStrLn key
+          run <- createRun "http://tesla01.ifca.es:8080" key
+          print run
         Nothing -> print (__ "Error sending program")
     else print (__ "No skema file")
   return ()

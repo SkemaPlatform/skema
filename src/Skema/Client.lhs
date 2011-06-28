@@ -15,7 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Client( sendSkema ) where
+module Skema.Client( sendSkema, createRun ) where
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,6 +36,18 @@ sendSkema server skmData = do
       return Nothing
     Right a -> do
       return . stripPrefix "inserted " . rspBody $ a
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+createRun :: String -> String -> IO Int
+createRun server pkey = do
+  rq <- postFormUrlEncoded (server ++ "/runs") [("pid",pkey)]
+  rst <- simpleHTTP rq
+  case rst of
+    Left a -> print a
+    Right a -> print . rspBody $ a
+  return 42
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
