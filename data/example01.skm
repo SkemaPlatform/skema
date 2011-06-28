@@ -1,11 +1,10 @@
 {
     "kernels":{
-        "Adder":{
-            "body":"int id = get_global_id(0);\nz[id] = x[id] + y[id];",
+        "Dupper":{
+            "body":"int id = get_global_id(0);\ny[id] = 2 * x[id];",
             "io":{
                 "x":{"data":"float","type":"InputPoint"},
-                "y":{"data":"float","type":"InputPoint"},
-                "z":{"data":"float","type":"OutputPoint"}}}},
-    "nodes":[[0, {"kernel":"Adder"}]],
+                "y":{"data":"float","type":"OutputPoint"}}}},
+    "nodes":[[0, {"kernel":"Dupper"}]],
     "arrows":[]
 }
