@@ -22,14 +22,14 @@ module Skema.Client( sendSkema ) where
 \begin{code}
 import Data.List( stripPrefix )
 import Network.HTTP( simpleHTTP, Response(..) )
-import Skema.Network( postString )
+import Skema.Network( postMultipartData, postFormUrlEncoded )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 sendSkema :: String -> String -> IO (Maybe String)
 sendSkema server skmData = do
-  rq <- postString (server ++ "/programs") skmData
+  rq <- postMultipartData (server ++ "/programs") skmData
   rst <- simpleHTTP rq
   case rst of
     Left _ -> do
