@@ -15,7 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Client( sendSkema, createRun ) where
+module Skema.Client( sendSkema, createRun, sendRunInput ) where
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,22 +32,28 @@ sendSkema server skmData = do
   rq <- postMultipartData (server ++ "/programs") skmData
   rst <- simpleHTTP rq
   case rst of
-    Left _ -> do
-      return Nothing
-    Right a -> do
-      return . stripPrefix "inserted " . rspBody $ a
+    Left _ -> return Nothing
+    Right a -> return . stripPrefix "inserted " . rspBody $ a
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-createRun :: String -> String -> IO Int
+createRun :: String -> String -> IO (Maybe [Int])
 createRun server pkey = do
   rq <- postFormUrlEncoded (server ++ "/runs") [("pid",pkey)]
   rst <- simpleHTTP rq
   case rst of
-    Left a -> print a
-    Right a -> print . rspBody $ a
-  return 42
+    Left a -> return Nothing
+    Right a -> return . Just . read $ rspBody a
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+sendRunInput :: [Int] -> [FilePath] -> IO Bool
+sendRunInput ports filenames = do
+  if length ports /= length filenames
+    then return False
+    else return True
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
