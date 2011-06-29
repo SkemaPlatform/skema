@@ -124,9 +124,9 @@ launch opts = do
             Nothing -> putStrLn (__ "Error creating run instance") 
             Just ports-> do
               print ports
-              sendInOk <- sendRunInput ports (infiles opts)
+              sendInOk <- sendRunInput "tesla01.ifca.es" ports (infiles opts)
               if sendInOk 
-                then putStrLn (__ "Sending")
+                then putStrLn (__ "Sending ok")
                 else putStrLn (__ "Error sending files")
               return ()
     else print (__ "No skema file")

@@ -20,8 +20,14 @@ module Skema.Client( sendSkema, createRun, sendRunInput ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+import Control.Monad( zipWithM )
 import Data.List( stripPrefix )
 import Network.HTTP( simpleHTTP, Response(..) )
+import Network.Socket
+  ( SocketType(..), AddrInfo(..), AddrInfoFlag(..), Family(..), socket, sClose, 
+    defaultHints, withSocketsDo, connect, getAddrInfo, defaultProtocol )
+import Network.Socket.ByteString( sendAll )
+import qualified Data.ByteString.Char8 as BC( readFile )
 import Skema.Network( postMultipartData, postFormUrlEncoded )
 \end{code}
 
@@ -43,17 +49,45 @@ createRun server pkey = do
   rq <- postFormUrlEncoded (server ++ "/runs") [("pid",pkey)]
   rst <- simpleHTTP rq
   case rst of
-    Left a -> return Nothing
+    Left _ -> return Nothing
     Right a -> return . Just . read $ rspBody a
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-sendRunInput :: [Int] -> [FilePath] -> IO Bool
-sendRunInput ports filenames = do
+desiredAddr :: Maybe AddrInfo
+desiredAddr = Just $ defaultHints {
+  addrSocketType = Stream,
+  addrFamily = AF_INET, 
+  addrFlags = [AI_PASSIVE]}
+\end{code}
+
+\begin{code}
+sendFile :: String -> Int -> FilePath -> IO Bool
+sendFile server port filename = withSocketsDo $ do
+  addrinfos <- getAddrInfo desiredAddr (Just server) (Just . show $ port)
+  if null addrinfos
+    then do
+      return False
+    else do
+      datafile <- BC.readFile filename
+      let serveraddr = head addrinfos
+      sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+      connect sock (addrAddress serveraddr)
+      sendAll sock datafile
+      sClose sock
+      return True
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+sendRunInput :: String -> [Int] -> [FilePath] -> IO Bool
+sendRunInput server ports filenames = do
   if length ports /= length filenames
     then return False
-    else return True
+    else do
+      results <- zipWithM (sendFile server) ports filenames
+      return . all id $ results
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
