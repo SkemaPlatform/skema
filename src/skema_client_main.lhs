@@ -24,7 +24,7 @@ import System.Exit( exitSuccess )
 import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain )
 
-import Skema.Client( sendSkema, createRun )
+import Skema.Client( sendSkema, createRun, sendRunInput )
 import Skema.Util( __ )
 import Paths_skema( version )
 \end{code}
@@ -116,11 +116,19 @@ launch opts = do
       skemadata <- readFile.fromJust.skemafile $ opts
       sendResult <- sendSkema "http://tesla01.ifca.es:8080" skemadata
       case sendResult of
+        Nothing -> putStrLn (__ "Error sending program")
         Just key -> do
           putStrLn key
-          run <- createRun "http://tesla01.ifca.es:8080" key
-          print run
-        Nothing -> print (__ "Error sending program")
+          runResult <- createRun "http://tesla01.ifca.es:8080" key
+          case runResult of
+            Nothing -> putStrLn (__ "Error creating run instance") 
+            Just ports-> do
+              print ports
+              sendInOk <- sendRunInput ports (infiles opts)
+              if sendInOk 
+                then putStrLn (__ "Sending")
+                else putStrLn (__ "Error sending files")
+              return ()
     else print (__ "No skema file")
   return ()
 \end{code}
