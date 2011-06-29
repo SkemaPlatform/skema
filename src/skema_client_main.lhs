@@ -32,7 +32,9 @@ import Paths_skema( version )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 data Options = Options 
-               { skemafile :: !(Maybe FilePath)
+               { hostname :: !String
+               , hostport :: !Int
+               , skemafile :: !(Maybe FilePath)
                , infiles :: ![FilePath]
                , outfiles :: ![FilePath]
                } deriving( Show) 
@@ -40,7 +42,7 @@ data Options = Options
 
 \begin{code}
 defaultOptions :: Options
-defaultOptions = Options Nothing [] []
+defaultOptions = Options "tesla01.ifca.es" 8080 Nothing [] []
 \end{code}
 
 \begin{code}
@@ -48,7 +50,9 @@ options :: [OptDescr (Options -> IO Options)]
 options = [Option "h" ["help"] (NoArg showUsage) "show usage"
           ,Option "v" ["version"] (NoArg printVersion) "show program version"
           ,Option "i" ["in"] (ReqArg setInputFile "FILE") "input file"
-          ,Option "o" ["out"] (ReqArg setOutputFile "FILE") "output file"]
+          ,Option "o" ["out"] (ReqArg setOutputFile "FILE") "output file"
+          ,Option "p" ["port"] (ReqArg setHostPort "PORT") "host-port"
+          ,Option "w" ["host"] (ReqArg setHostName "HOST") "host-name"]
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,23 +112,34 @@ setOutputFile file opts = return $ opts {
 \end{code}
 
 \begin{code}
+setHostName :: String -> Options -> IO Options
+setHostName host opts = return $ opts { hostname = host }
+\end{code}
+
+\begin{code}
+setHostPort :: String -> Options -> IO Options
+setHostPort port opts = return $ opts { hostport = read port }
+\end{code}
+
+\begin{code}
 launch :: Options -> IO ()
 launch opts = do
   print opts
   if isJust.skemafile $ opts 
     then do
+      let webhost = "http://"++ hostname opts ++ ":" ++ (show $ hostport opts)
       skemadata <- readFile.fromJust.skemafile $ opts
-      sendResult <- sendSkema "http://tesla01.ifca.es:8080" skemadata
+      sendResult <- sendSkema webhost skemadata
       case sendResult of
         Nothing -> putStrLn (__ "Error sending program")
         Just key -> do
           putStrLn key
-          runResult <- createRun "http://tesla01.ifca.es:8080" key
+          runResult <- createRun webhost key
           case runResult of
             Nothing -> putStrLn (__ "Error creating run instance") 
             Just ports-> do
               print ports
-              sendInOk <- sendRunInput "tesla01.ifca.es" ports (infiles opts)
+              sendInOk <- sendRunInput (hostname opts) ports (infiles opts)
               if sendInOk 
                 then putStrLn (__ "Sending ok")
                 else putStrLn (__ "Error sending files")
