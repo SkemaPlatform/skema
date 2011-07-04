@@ -15,19 +15,20 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.Client( sendSkema, createRun, sendRunInput ) where
+module Skema.Client( sendSkema, createRun, sendRunInput, getRunOuput ) where
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Control.Monad( zipWithM )
+import Control.Monad( zipWithM, unless )
 import Data.List( stripPrefix )
 import Network.HTTP( simpleHTTP, Response(..) )
 import Network.Socket
   ( SocketType(..), AddrInfo(..), AddrInfoFlag(..), Family(..), socket, sClose, 
     defaultHints, withSocketsDo, connect, getAddrInfo, defaultProtocol )
-import Network.Socket.ByteString( sendAll )
-import qualified Data.ByteString.Char8 as BC( readFile )
+import Network.Socket.ByteString( sendAll, recv )
+import qualified Data.ByteString.Char8 as BC( readFile, hPut, null )
+import System.IO( IOMode(..), hClose, openBinaryFile )
 import Skema.Network( postMultipartData, postFormUrlEncoded )
 \end{code}
 
@@ -44,7 +45,7 @@ sendSkema server skmData = do
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-createRun :: String -> String -> IO (Maybe [Int])
+createRun :: String -> String -> IO (Maybe ([Int],[Int]))
 createRun server pkey = do
   rq <- postFormUrlEncoded (server ++ "/runs") [("pid",pkey)]
   rst <- simpleHTTP rq
@@ -79,6 +80,30 @@ sendFile server port filename = withSocketsDo $ do
       return True
 \end{code}
 
+\begin{code}
+getFile :: String -> Int -> FilePath -> IO Bool
+getFile server port filename = withSocketsDo $ do
+  addrinfos <- getAddrInfo desiredAddr (Just server) (Just . show $ port)
+  if null addrinfos
+    then do
+      return False
+    else do
+      f <- openBinaryFile filename WriteMode
+      let serveraddr = head addrinfos
+      sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+      connect sock (addrAddress serveraddr)
+      getLoop f sock
+      sClose sock
+      hClose f
+      return True
+  where
+    getLoop f conn = do
+      msg <- recv conn 1024
+      unless (BC.null msg) $ do
+        BC.hPut f msg
+        getLoop f conn
+\end{code}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 sendRunInput :: String -> [Int] -> [FilePath] -> IO Bool
@@ -88,6 +113,17 @@ sendRunInput server ports filenames = do
     else do
       results <- zipWithM (sendFile server) ports filenames
       return . all id $ results
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+getRunOuput :: String -> [Int] -> [FilePath] -> IO Bool
+getRunOuput server ports filenames = do
+  if length ports /= length filenames
+    then return False
+    else do
+      results <- zipWithM (getFile server) ports filenames
+      return . all id $ results  
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

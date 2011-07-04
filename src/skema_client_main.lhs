@@ -24,7 +24,7 @@ import System.Exit( exitSuccess )
 import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain )
 
-import Skema.Client( sendSkema, createRun, sendRunInput )
+import Skema.Client( sendSkema, createRun, sendRunInput, getRunOuput )
 import Skema.Util( __ )
 import Paths_skema( version )
 \end{code}
@@ -137,11 +137,16 @@ launch opts = do
           runResult <- createRun webhost key
           case runResult of
             Nothing -> putStrLn (__ "Error creating run instance") 
-            Just ports-> do
-              print ports
-              sendInOk <- sendRunInput (hostname opts) ports (infiles opts)
+            Just (iports,oports)-> do
+              print (iports,oports)
+              sendInOk <- sendRunInput (hostname opts) iports (infiles opts)
               if sendInOk 
-                then putStrLn (__ "Sending ok")
+                then do
+                  putStrLn (__ "Sending ok")
+                  getOutOk <- getRunOuput (hostname opts) oports (outfiles opts)
+                  if getOutOk
+                    then putStrLn (__ "Receiving ok")
+                    else putStrLn (__ "Error getting files")
                 else putStrLn (__ "Error sending files")
               return ()
     else print (__ "No skema file")
