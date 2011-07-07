@@ -23,7 +23,7 @@ module Properties( main ) where
 \begin{code}
 import Test.QuickCheck( Arbitrary(..), quickCheck, arbitrarySizedIntegral )
 import Text.Printf( printf )
-import Skema.Util( Pos2D, prettyJSON )
+import Skema.Editor.Types( Pos2D )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
