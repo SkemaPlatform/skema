@@ -22,10 +22,9 @@ import System.Console.GetOpt(
   ArgOrder(..), OptDescr(..), ArgDescr(..), getOpt, usageInfo )
 import System.Exit( exitSuccess )
 import System.Locale.SetLocale( Category(..), setLocale )
-import Text.I18N.GetText( bindTextDomain, textDomain )
-
+import Text.I18N.GetText( bindTextDomain, textDomain, getText )
+import System.IO.Unsafe( unsafePerformIO )
 import Skema.Client( sendSkema, createRun, sendRunInput, getRunOuput )
-import Skema.Util( __ )
 import Paths_skema( version )
 \end{code}
 
@@ -53,6 +52,12 @@ options = [Option "h" ["help"] (NoArg showUsage) "show usage"
           ,Option "o" ["out"] (ReqArg setOutputFile "FILE") "output file"
           ,Option "p" ["port"] (ReqArg setHostPort "PORT") "host-port"
           ,Option "w" ["host"] (ReqArg setHostName "HOST") "host-name"]
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+__ :: String -> String
+__ = unsafePerformIO . getText
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
