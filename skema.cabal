@@ -73,7 +73,7 @@ Executable skema-test
   hs-source-dirs:  src tests
   ghc-options:     -Wall -fhpc -Werror
   Main-is:         skema_test.lhs
-  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2
+  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2, skema-common==0.1.*
   cpp-options:   -DTESTING
 
   if flag(testing)
