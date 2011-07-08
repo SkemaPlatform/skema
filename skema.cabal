@@ -45,15 +45,8 @@ Executable skema
 
   if flag(coverage)
     ghc-options:   -fhpc
-
   if flag(testing)
     buildable: False
-
-  if flag(testing)
-    cpp-options:   -DTESTING
-    hs-source-dirs: src tests
-    build-depends: QuickCheck >= 2
-    ghc-options:   -fhpc -Werror
 
 Executable skema-client
   hs-source-dirs:  src
@@ -64,12 +57,11 @@ Executable skema-client
 
   if flag(coverage)
     ghc-options:   -fhpc
-
   if flag(testing)
     buildable: False
 
 Executable skema-test
-  hs-source-dirs:  src tests
+  hs-source-dirs:  src src/test
   ghc-options:     -Wall -fhpc -Werror
   Main-is:         skema_test.lhs
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2, skema-common==0.1.*
