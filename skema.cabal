@@ -28,7 +28,6 @@ Library
   Exposed-modules: 
     Skema
     Skema.SkemaDoc
-    Skema.Block.Function
     Skema.Editor.Canvas
     Skema.Editor.MainWindow
     Skema.Editor.Util
