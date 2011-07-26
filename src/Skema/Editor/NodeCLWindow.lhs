@@ -26,9 +26,10 @@ import Control.Concurrent.MVar( MVar )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Graphics.UI.Gtk
   ( containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew )
-import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackEnd )
-import Graphics.UI.Gtk.Windows.Dialog
-  ( dialogNew, dialogRun, dialogGetUpper )
+import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackEnd, boxPackStart )
+import Graphics.UI.Gtk.Windows.Dialog( 
+  dialogNew, dialogRun, dialogGetUpper )
+import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.SourceView
   ( sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath
   , sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage
@@ -66,7 +67,13 @@ showNodeCLWindow _ = do
   sw <- scrolledWindowNew Nothing Nothing
   containerAdd sw sourceview
   
-  boxPackEnd internal sw PackGrow 0
+  lbl0 <- labelNew $ Just "Input Parameters"
+  lbl1 <- labelNew $ Just "Output Parameters"
+  boxPackStart internal lbl0 PackNatural 0
+  boxPackStart internal lbl1 PackNatural 0
+  lbl2 <- labelNew $ Just "Kernel Body"
+  boxPackStart internal lbl2 PackNatural 0
+  boxPackStart internal sw PackGrow 0
   
   widgetShowAll window 
   
