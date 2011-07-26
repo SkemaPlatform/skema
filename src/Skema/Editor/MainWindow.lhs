@@ -26,7 +26,6 @@ import Control.Concurrent.MVar( MVar, takeMVar, putMVar, readMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
-import Data.Tree( Tree(..), Forest )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk
     ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
@@ -40,14 +39,11 @@ import Graphics.UI.Gtk.Gdk.EventM
     , MouseButton(..), Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
-import Graphics.UI.Gtk.ModelView
-    ( cellText, cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew
-    , treeViewColumnSetTitle, treeViewColumnPackStart )
-import Graphics.UI.Gtk.ModelView.TreeStore
-    ( TreeStore, treeStoreNew )
-import Graphics.UI.Gtk.ModelView.TreeView
-    ( TreeView, castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn
-    , treeViewSetModel, cursorChanged, treeViewGetCursor, treeViewExpandAll )
+import Graphics.UI.Gtk.ModelView( 
+  ListStore, listStoreNew, TreeView, castToTreeView, treeViewSetHeadersVisible, 
+  treeViewAppendColumn, treeViewSetModel, cursorChanged, treeViewGetCursor, 
+  treeViewExpandAll, cellText, cellRendererTextNew, cellLayoutSetAttributes, 
+  treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
     ( castToToolButton, onToolButtonClicked )
 import Skema.Editor.SkemaState
@@ -113,9 +109,7 @@ prepareMainWindow xml state = do
   let skdoc = skemaDoc sks
 
   ktree <- xmlGetWidget xml castToTreeView "kernels_tree"
-  storeKernels <- treeStoreNew [ Node "library nodes" []
-                               , Node "project nodes" 
-                                          (extractKernelsTree skdoc)]
+  storeKernels <- listStoreNew (extractKernelsTree skdoc)
   treeViewSetModel ktree storeKernels
   setupKernelsView ktree storeKernels
   treeViewExpandAll ktree
@@ -234,13 +228,13 @@ drawCanvas canvas = do
 \end{code}
 
 \begin{code}
-setupKernelsView :: TreeView -> TreeStore String -> IO ()
+setupKernelsView :: TreeView -> ListStore String -> IO ()
 setupKernelsView view model = do
   treeViewSetHeadersVisible view True
 
   col <- treeViewColumnNew
   renderer <- cellRendererTextNew
-  treeViewColumnSetTitle col "Name"
+  treeViewColumnSetTitle col "Project Nodes"
   treeViewColumnPackStart col renderer True
   cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
 
@@ -250,8 +244,8 @@ setupKernelsView view model = do
 \end{code}
 
 \begin{code}
-extractKernelsTree :: SkemaDoc -> Forest String
-extractKernelsTree = map (\a -> Node (name a) []) . M.elems . library
+extractKernelsTree :: SkemaDoc -> [String]
+extractKernelsTree = map name . M.elems . library
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
