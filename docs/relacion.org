@@ -71,3 +71,6 @@ libxml2-dev
 libgtk2.0-dev
 libglade2-dev
 libgtksourceview2.0-dev
+
+* Apendice: Teoria
+** Los Program Flows son DAG (Directed Acyclic Graphs)
