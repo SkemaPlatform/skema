@@ -40,10 +40,11 @@ import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Graphics.UI.Gtk.ModelView( 
-  ListStore, listStoreNew, TreeView, castToTreeView, treeViewSetHeadersVisible, 
-  treeViewAppendColumn, treeViewSetModel, cursorChanged, treeViewGetCursor, 
-  treeViewExpandAll, cellText, cellRendererTextNew, cellLayoutSetAttributes, 
-  treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart )
+  ListStore, listStoreNew, listStoreClear, listStoreAppend, TreeView, 
+  castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn, 
+  treeViewSetModel, cursorChanged, treeViewGetCursor, treeViewExpandAll, 
+  cellText, cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew, 
+  treeViewColumnSetTitle, treeViewColumnPackStart )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
     ( castToToolButton, onToolButtonClicked )
 import Skema.Editor.SkemaState
@@ -56,7 +57,7 @@ import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
     , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
-    , deleteArrow )
+    , deleteArrow, minimalKernel, skemaDocInsertKernel )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -105,24 +106,30 @@ prepareMainWindow xml state = do
          (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
          liftIO $ putMVar state new_sks
   
-  sks <- liftIO $ readMVar state
-  let skdoc = skemaDoc sks
+  skdoc <- fmap skemaDoc $ readMVar state
 
   ktree <- xmlGetWidget xml castToTreeView "kernels_tree"
   storeKernels <- listStoreNew (extractKernelsTree skdoc)
-  treeViewSetModel ktree storeKernels
   setupKernelsView ktree storeKernels
   treeViewExpandAll ktree
 
   _ <- ktree `on` cursorChanged $ do
          (path, _) <- treeViewGetCursor ktree
-         unless (null path) $ print "test"
+         unless (null path) $ print path
          
   btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
   
   btn_test <- xmlGetWidget xml castToToolButton "mtb_test"
   _ <- onToolButtonClicked btn_test $ showNodeCLWindow state
+  
+  btn_new_node <- xmlGetWidget xml castToToolButton "ktb_new"
+  _ <- onToolButtonClicked btn_new_node $ do
+       sks <- takeMVar state
+       (_,new_sks) <- runXS sks $ newKernel
+       listStoreClear storeKernels
+       mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
+       putMVar state new_sks
   
   return ()
 \end{code}
@@ -228,13 +235,23 @@ drawCanvas canvas = do
 \end{code}
 
 \begin{code}
+newKernel :: XS ()
+newKernel = do 
+  oldDoc <- stateGet skemaDoc
+  let krnl = minimalKernel $ library oldDoc
+      newDoc = skemaDocInsertKernel oldDoc krnl
+  statePutSkemaDoc newDoc
+\end{code}
+
+\begin{code}
 setupKernelsView :: TreeView -> ListStore String -> IO ()
 setupKernelsView view model = do
+  treeViewSetModel view model
   treeViewSetHeadersVisible view True
 
   col <- treeViewColumnNew
   renderer <- cellRendererTextNew
-  treeViewColumnSetTitle col "Project Nodes"
+  treeViewColumnSetTitle col "Project Kernels"
   treeViewColumnPackStart col renderer True
   cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
 
