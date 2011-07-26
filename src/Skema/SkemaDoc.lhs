@@ -24,7 +24,7 @@ import Data.List( partition, find )
 import Control.Monad( msum, liftM )
 import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI
-    ( IntMap, empty, lookup, elems, assocs, fromList )
+    ( IntMap, empty, lookup, elems, assocs, fromList, insert, keys )
 import qualified Data.Map as M( fromList )
 import Skema.Editor.Types
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
@@ -142,6 +142,19 @@ emptyKernel = Kernel "" "" MI.empty
 \end{code}
 
 \begin{code}
+minimalKernel :: MI.IntMap Kernel -> Kernel
+minimalKernel kns = emptyKernel { 
+  name=newName,
+  iopoints=MI.fromList $ zip [0..] 
+           [IOPoint "x" IOfloat InputPoint, 
+            IOPoint "y" IOfloat OutputPoint]}
+  where
+    newName = head $ dropWhile (flip elem oldNames) wantedNames
+    oldNames = map name $ MI.elems kns
+    wantedNames = zipWith (++) (repeat "NewKernel") (map show ([0..]::[Int]))
+\end{code}
+
+\begin{code}
 data SelectedElement = SeNODE !Int
                      | SeIOP { seIOPNode :: !Int
                              , seIOPPoint :: !Int }
@@ -209,6 +222,14 @@ data SkemaDoc = SkemaDoc
 \begin{code}
 emptySkemaDoc :: SkemaDoc
 emptySkemaDoc = SkemaDoc MI.empty MI.empty []
+\end{code}
+
+\begin{code}
+skemaDocInsertKernel :: SkemaDoc -> Kernel -> SkemaDoc
+skemaDocInsertKernel skdoc kernel = skdoc { library = MI.insert newKey kernel oldLibrary }
+  where
+    oldLibrary = library skdoc
+    newKey = 1 + (maximum $ MI.keys oldLibrary)
 \end{code}
 
 \begin{code}
