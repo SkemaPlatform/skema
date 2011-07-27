@@ -26,7 +26,7 @@ import Control.Concurrent.MVar( MVar )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Graphics.UI.Gtk
   ( containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew )
-import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackEnd, boxPackStart )
+import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
   dialogNew, dialogRun, dialogGetUpper )
 import Graphics.UI.Gtk.Display.Label( labelNew )

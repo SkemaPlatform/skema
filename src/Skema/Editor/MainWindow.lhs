@@ -22,7 +22,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 \begin{code}
 import Control.Monad( when, unless )
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, takeMVar, putMVar, readMVar )
+import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_ )
 import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
@@ -72,39 +72,39 @@ prepareMainWindow xml state = do
 
   _ <- canvas `on` exposeEvent $ tryEvent $ do
          eventCanvas <- eventWindow
-         sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ drawCanvas eventCanvas
-         liftIO $ putMVar state new_sks
+         liftIO . modifyMVar_ state $ \sks -> do
+           (_,new_sks) <- runXS sks $ drawCanvas eventCanvas
+           return new_sks
 
   _ <- canvas `on` buttonPressEvent $ tryEvent $ do
          LeftButton <- eventButton
          SingleClick <- eventClick
          (mx,my) <- eventCoordinates
-         sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ selectElement mx my
-         liftIO $ putMVar state new_sks
+         liftIO . modifyMVar_ state $ \sks -> do
+           (_,new_sks) <- runXS sks $ selectElement mx my
+           return new_sks
 
   _ <- canvas `on` buttonPressEvent $ tryEvent $ do
          RightButton <- eventButton
          SingleClick <- eventClick
          (mx,my) <- eventCoordinates
-         sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ insertElement mx my canvas
-         liftIO $ putMVar state new_sks
+         liftIO . modifyMVar_ state $ \sks -> do
+           (_,new_sks) <- runXS sks $ insertElement mx my canvas
+           return new_sks
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
          LeftButton <- eventButton
          (mx,my) <- eventCoordinates
-         sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ releaseElement mx my canvas
-         liftIO $ putMVar state new_sks
-         liftIO $ widgetQueueDraw canvas
+         liftIO . modifyMVar_ state $ \sks -> do
+           (_,new_sks) <- runXS sks $ releaseElement mx my canvas
+           widgetQueueDraw canvas
+           return new_sks
          
   _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
-         sks <- liftIO $ takeMVar state
-         (_,new_sks) <- liftIO $ runXS sks $ moveTo mx my canvas
-         liftIO $ putMVar state new_sks
+         liftIO . modifyMVar_ state $ \sks -> do
+           (_,new_sks) <- runXS sks $ moveTo mx my canvas
+           return new_sks
   
   skdoc <- fmap skemaDoc $ readMVar state
 
@@ -114,8 +114,8 @@ prepareMainWindow xml state = do
   treeViewExpandAll ktree
 
   _ <- ktree `on` cursorChanged $ do
-         (path, _) <- treeViewGetCursor ktree
-         unless (null path) $ print path
+    (path, _) <- treeViewGetCursor ktree
+    unless (null path) $ print path
          
   btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
@@ -123,17 +123,54 @@ prepareMainWindow xml state = do
   btn_test <- xmlGetWidget xml castToToolButton "mtb_test"
   _ <- onToolButtonClicked btn_test $ showNodeCLWindow state
   
-  btn_new_node <- xmlGetWidget xml castToToolButton "ktb_new"
-  _ <- onToolButtonClicked btn_new_node $ do
-       sks <- takeMVar state
-       (_,new_sks) <- runXS sks $ newKernel
-       listStoreClear storeKernels
-       mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
-       putMVar state new_sks
+  btn_new_kernel <- xmlGetWidget xml castToToolButton "ktb_new"
+  _ <- onToolButtonClicked btn_new_kernel . modifyMVar_ state $ \sks -> do
+      (_,new_sks) <- runXS sks $ newKernel
+      listStoreClear storeKernels
+      mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
+      return new_sks
+  
+  btn_edit_kernel <- xmlGetWidget xml castToToolButton "ktb_edit"
+  _ <- onToolButtonClicked btn_edit_kernel $ do
+    (path, _) <- treeViewGetCursor ktree
+    unless (null path) . modifyMVar_ state $ \sks -> do
+      print "delete"
+      return sks
+    
+  btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
+  _ <- onToolButtonClicked btn_del_kernel $ do
+    (path, _) <- treeViewGetCursor ktree
+    unless (null path) . modifyMVar_ state $ \sks -> do
+      print "delete"
+      return sks
+    
+  return ()
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+setupKernelsView :: TreeView -> ListStore String -> IO ()
+setupKernelsView view model = do
+  treeViewSetModel view model
+  treeViewSetHeadersVisible view True
+
+  col <- treeViewColumnNew
+  renderer <- cellRendererTextNew
+  treeViewColumnSetTitle col "Project Kernels"
+  treeViewColumnPackStart col renderer True
+  cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
+
+  _ <- treeViewAppendColumn view col
   
   return ()
 \end{code}
 
+\begin{code}
+extractKernelsTree :: SkemaDoc -> [String]
+extractKernelsTree = map name . M.elems . library
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 selectElement :: Double -> Double -> XS ()
 selectElement mx my = do
@@ -142,9 +179,11 @@ selectElement mx my = do
   statePutSelectedPos (Pos2D (mx, my))
   when (maybe False isIOPoint selElement) $ do
     stDoc <- stateGet skemaDoc
-    let pointType = arrowIOPointType stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
+    let selNode = seIOPNode.fromJust $ selElement
+        selPoint = seIOPPoint.fromJust $ selElement
+        pointType = arrowIOPointType stDoc selNode selPoint
     when (maybe False (==InputPoint) pointType) $ do
-      let marrow = findInputArrow stDoc (seIOPNode.fromJust $ selElement) (seIOPPoint.fromJust $ selElement)
+      let marrow = findInputArrow stDoc selNode selPoint
       when (isJust marrow) (statePutSkemaDoc (deleteArrow stDoc (fromJust marrow)))
 \end{code}
 
@@ -209,31 +248,27 @@ releaseSelectedElement mx my (SeIOP ki ji) = do
 releaseSelectedElement _ _ _ = return ()
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 drawCanvas :: DrawWindow -> XS ()
 drawCanvas canvas = do
   let drawable = castToDrawable canvas
   stDoc <- stateGet skemaDoc
   (w,h) <- io $ drawableGetSize drawable
-  io $ renderWithDrawable canvas (
-                                  drawSkemaDoc
-                                  (fromIntegral w) 
-                                  (fromIntegral h) 
-                                  stDoc)
+  io . renderWithDrawable canvas $ drawSkemaDoc
+                                  (fromIntegral w) (fromIntegral h) 
+                                  stDoc
      
   stElem <- stateGet selectedElem
   (Pos2D (ox,oy)) <- stateGet selectedPos
   (Pos2D (mx,my)) <- stateGet selectedPos2
-  io $ renderWithDrawable canvas (
-                                  drawSelected
-                                  (fromIntegral w) 
-                                  (fromIntegral h)
+  io . renderWithDrawable canvas $ drawSelected
+                                  (fromIntegral w) (fromIntegral h)
                                   stElem
-                                  ox oy
-                                  mx my
-                                 )
+                                  ox oy mx my
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 newKernel :: XS ()
 newKernel = do 
@@ -241,28 +276,6 @@ newKernel = do
   let krnl = minimalKernel $ library oldDoc
       newDoc = skemaDocInsertKernel oldDoc krnl
   statePutSkemaDoc newDoc
-\end{code}
-
-\begin{code}
-setupKernelsView :: TreeView -> ListStore String -> IO ()
-setupKernelsView view model = do
-  treeViewSetModel view model
-  treeViewSetHeadersVisible view True
-
-  col <- treeViewColumnNew
-  renderer <- cellRendererTextNew
-  treeViewColumnSetTitle col "Project Kernels"
-  treeViewColumnPackStart col renderer True
-  cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
-
-  _ <- treeViewAppendColumn view col
-  
-  return ()
-\end{code}
-
-\begin{code}
-extractKernelsTree :: SkemaDoc -> [String]
-extractKernelsTree = map name . M.elems . library
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
