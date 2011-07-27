@@ -22,6 +22,9 @@ import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import System.Environment( getProgName, getArgs )
+import System.IO.Unsafe( unsafePerformIO )
+import System.Locale.SetLocale( Category(..), setLocale )
+import Text.I18N.GetText( bindTextDomain, textDomain, getText )
 import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.Editor.Types( Pos2D(..) )
@@ -56,15 +59,25 @@ testDoc = emptySkemaDoc {
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+__ :: String -> String
+__ = unsafePerformIO . getText
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
 main :: IO ()
 main = do
-    args <- getArgs
-    self <- getProgName
-    case args of
-        []                    -> launch
-        ["--help"]            -> usage
-        ["--version"]         -> putStrLn (self ++ " " ++ showVersion version)
-        _                     -> fail "unrecognized flags"
+  _ <- setLocale LC_ALL (Just "") 
+  _ <- bindTextDomain __MESSAGE_CATALOG_DOMAIN__ (Just __MESSAGE_CATALOG_DIR__)
+  _ <- textDomain (Just __MESSAGE_CATALOG_DOMAIN__)
+  
+  args <- getArgs
+  self <- getProgName
+  case args of
+    []                    -> launch
+    ["--help"]            -> usage
+    ["--version"]         -> putStrLn (self ++ " " ++ showVersion version)
+    _                     -> fail (__"unrecognized flags")
 \end{code}
 
 \begin{code}
@@ -72,10 +85,10 @@ usage :: IO ()
 usage = do
     self <- getProgName
     putStr . unlines $
-        [concat ["Usage: ", self, " [OPTION]"],
-         "Options:",
-         "  --help                       Print this message",
-         "  --version                    Print the version number"]
+        [concat [(__"Usage: "), self, " [OPTION]"],
+         (__"Options:"),
+         (__"  --help                       Print this message"),
+         (__"  --version                    Print the version number")]
 \end{code}
 
 \begin{code}

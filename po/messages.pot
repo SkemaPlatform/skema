@@ -1,0 +1,35 @@
+# Translation file
+
+msgid ""
+msgstr ""
+
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-01-13 06:05-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/skema_main.lhs:0
+msgid "unrecognized flags"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "Usage: "
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "Options:"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "  --help                       Print this message"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "  --version                    Print the version number"
+msgstr ""
+

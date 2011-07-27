@@ -1,0 +1,34 @@
+# Translation file
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-01-13 06:05-0800\n"
+"PO-Revision-Date: 2011-07-27 10:40+0200\n"
+"Last-Translator: Luis Cabellos <cabellos@ozzy.ifca.es>\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/skema_main.lhs:0
+msgid "unrecognized flags"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "Usage: "
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "Options:"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "  --help                       Print this message"
+msgstr ""
+
+#: src/skema_main.lhs:0
+msgid "  --version                    Print the version number"
+msgstr ""
