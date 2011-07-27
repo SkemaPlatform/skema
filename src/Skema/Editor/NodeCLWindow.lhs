@@ -40,7 +40,8 @@ import Graphics.UI.Gtk.SourceView(
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
   sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme, 
   sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme, 
-  sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer )
+  sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer, 
+  sourceBufferBeginNotUndoableAction, sourceBufferEndNotUndoableAction )
 import Skema.SkemaDoc( Kernel(..) )
 import Paths_skema( getDataDir )
 \end{code}
@@ -74,7 +75,9 @@ showNodeCLWindow krn usedNames = do
   sourceBufferSetLanguage sbuff slang
   sourceBufferSetStyleScheme sbuff (Just ssty)
   sourceBufferSetHighlightSyntax sbuff True
+  sourceBufferBeginNotUndoableAction sbuff
   textBufferSetText sbuff (body krn)
+  sourceBufferEndNotUndoableAction sbuff
 
   sourceview <- sourceViewNewWithBuffer sbuff
   sw <- scrolledWindowNew Nothing Nothing
