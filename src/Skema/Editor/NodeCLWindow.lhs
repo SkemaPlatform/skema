@@ -25,7 +25,7 @@ import Data.Char( isAlphaNum, isAlpha )
 import Control.Monad( when )
 import Graphics.UI.Gtk( 
   on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew, 
-  widgetDestroy, widgetGetState, widgetModifyBase, Color(..) )
+  widgetDestroy, widgetGetState, widgetModifyBase, Color(..), windowSetDefault )
 import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
@@ -107,8 +107,10 @@ showNodeCLWindow krn usedNames = do
       then widgetModifyBase eName eNameState goodColor
       else widgetModifyBase eName eNameState badColor
 
-  _ <- dialogAddButton window stockApply ResponseAccept
+  acceptButton <- dialogAddButton window stockApply ResponseAccept
   _ <- dialogAddButton window stockCancel ResponseReject
+  
+  windowSetDefault window $ Just acceptButton
   
   widgetShowAll window 
   
