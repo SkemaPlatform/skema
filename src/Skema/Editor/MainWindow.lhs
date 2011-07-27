@@ -23,7 +23,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 import Control.Monad( when, unless )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_ )
-import qualified Data.IntMap as M( adjust, keys, insert, elems )
+import qualified Data.IntMap as M( adjust, keys, insert, assocs )
 import Data.List( sort )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
@@ -40,11 +40,12 @@ import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Graphics.UI.Gtk.ModelView( 
-  ListStore, listStoreNew, listStoreClear, listStoreAppend, TreeView, 
-  castToTreeView, treeViewSetHeadersVisible, treeViewAppendColumn, 
-  treeViewSetModel, cursorChanged, treeViewGetCursor, treeViewExpandAll, 
-  cellText, cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew, 
-  treeViewColumnSetTitle, treeViewColumnPackStart )
+  ListStore, listStoreNew, listStoreClear, listStoreAppend, listStoreGetValue, 
+  listStoreIterToIndex, TreeView, castToTreeView, treeViewSetHeadersVisible, 
+  treeViewAppendColumn, treeViewSetModel, cursorChanged, treeViewGetCursor, 
+  treeViewExpandAll, cellText, cellRendererTextNew, cellLayoutSetAttributes, 
+  treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
+  treeModelGetIter )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
     ( castToToolButton, onToolButtonClicked )
 import Skema.Editor.SkemaState
@@ -57,7 +58,7 @@ import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc
     ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..)
     , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
-    , deleteArrow, minimalKernel, skemaDocInsertKernel )
+    , deleteArrow, minimalKernel, skemaDocInsertKernel, skemaDocDeleteKernel )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -134,22 +135,28 @@ prepareMainWindow xml state = do
   _ <- onToolButtonClicked btn_edit_kernel $ do
     (path, _) <- treeViewGetCursor ktree
     unless (null path) . modifyMVar_ state $ \sks -> do
-      print "delete"
+      print "edit"
       return sks
     
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
     (path, _) <- treeViewGetCursor ktree
-    unless (null path) . modifyMVar_ state $ \sks -> do
-      print "delete"
-      return sks
+    iter <- treeModelGetIter storeKernels path
+    when (isJust iter) $ do 
+      modifyMVar_ state $ \sks -> do
+        (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
+        (_,new_sks) <- runXS sks $ deleteKernel i
+        listStoreClear storeKernels
+        mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
+        return new_sks
+      widgetQueueDraw canvas
     
   return ()
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-setupKernelsView :: TreeView -> ListStore String -> IO ()
+setupKernelsView :: TreeView -> ListStore (Int,Kernel) -> IO ()
 setupKernelsView view model = do
   treeViewSetModel view model
   treeViewSetHeadersVisible view True
@@ -158,7 +165,7 @@ setupKernelsView view model = do
   renderer <- cellRendererTextNew
   treeViewColumnSetTitle col "Project Kernels"
   treeViewColumnPackStart col renderer True
-  cellLayoutSetAttributes col renderer model $ \r -> [ cellText := r ]
+  cellLayoutSetAttributes col renderer model $ \(_,r) -> [ cellText := name r ]
 
   _ <- treeViewAppendColumn view col
   
@@ -166,8 +173,8 @@ setupKernelsView view model = do
 \end{code}
 
 \begin{code}
-extractKernelsTree :: SkemaDoc -> [String]
-extractKernelsTree = map name . M.elems . library
+extractKernelsTree :: SkemaDoc -> [(Int,Kernel)]
+extractKernelsTree = M.assocs . library
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,6 +283,16 @@ newKernel = do
   let krnl = minimalKernel $ library oldDoc
       newDoc = skemaDocInsertKernel oldDoc krnl
   statePutSkemaDoc newDoc
+\end{code}
+
+\begin{code}
+deleteKernel :: Int -> XS ()
+deleteKernel idx = do
+  oldDoc <- stateGet skemaDoc
+  io $ print oldDoc
+  let newdoc = skemaDocDeleteKernel oldDoc idx
+  io $ print newdoc
+  statePutSkemaDoc newdoc
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
