@@ -22,20 +22,19 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 \begin{code}
 import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_ )
+import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_, withMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, assocs, elems )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
-import Graphics.UI.Gtk
-    ( on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize
-    , DrawWindow, DrawingArea )
-import Graphics.UI.Gtk.Abstract.Widget
-    ( widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent
-    , motionNotifyEvent, widgetQueueDraw
-    , EventMask(..) )
-import Graphics.UI.Gtk.Gdk.EventM
-    ( tryEvent, eventButton, eventClick, eventCoordinates
-    , MouseButton(..), Click(..) )
+import Graphics.UI.Gtk( 
+  on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize,
+  DrawWindow, DrawingArea )
+import Graphics.UI.Gtk.Abstract.Widget( 
+  widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent, 
+  motionNotifyEvent, widgetQueueDraw, EventMask(..) )
+import Graphics.UI.Gtk.Gdk.EventM( 
+  tryEvent, eventButton, eventClick, eventCoordinates, MouseButton(..), 
+  Click(..) )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Graphics.UI.Gtk.ModelView( 
@@ -45,19 +44,20 @@ import Graphics.UI.Gtk.ModelView(
   treeViewExpandAll, cellText, cellRendererTextNew, cellLayoutSetAttributes, 
   treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
   treeModelGetIter )
-import Graphics.UI.Gtk.MenuComboToolbar.ToolButton
-    ( castToToolButton, onToolButtonClicked )
-import Skema.Editor.SkemaState
-    ( SkemaState(..), XS(..), io, runXS, statePutSelectedPos
-    , statePutSelectedPos2, statePutSelectedElem, statePutSkemaDoc
-    , stateGet, stateSelectElement, stateInsertNewArrow )
+import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
+  castToToolButton, onToolButtonClicked )
+import Skema.Editor.SkemaState( 
+  SkemaState(..), XS(..), io, runXS, statePutSelectedPos, statePutSelectedPos2, 
+  statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement, 
+  stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
-import Skema.SkemaDoc
-    ( SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), IOPoint(..)
-    , nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow
-    , deleteArrow, minimalKernel, skemaDocInsertKernel, skemaDocDeleteKernel )
+import Skema.SkemaDoc( 
+  SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), IOPoint(..), 
+  nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, deleteArrow, 
+  minimalKernel, skemaDocInsertKernel, skemaDocDeleteKernel, 
+  skemaDocUpdateKernel )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -142,10 +142,14 @@ prepareMainWindow xml state = do
     iter <- treeModelGetIter storeKernels path
     when (isJust iter) $ do
       (i,k) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
-      newk <- showNodeCLWindow k
-      when (newk /= k) . modifyMVar_ state $ \sks -> do
-        (_,new_sks) <- runXS sks $ updateKernel i newk
-        return new_sks
+      usedNames <- withMVar state 
+                   $ return . filter (/= name k) . map name . M.elems . library . skemaDoc
+      newk <- showNodeCLWindow k usedNames
+      when (newk /= k) $ do 
+        modifyMVar_ state $ \sks -> do
+          (_,new_sks) <- runXS sks $ updateKernel i newk
+          clearKernelList storeKernels new_sks
+        widgetQueueDraw canvas
     
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
@@ -328,8 +332,7 @@ deleteKernel idx = do
 updateKernel :: Int -> Kernel -> XS ()
 updateKernel idx krn = do
   oldDoc <- stateGet skemaDoc
---  statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn
-  return ()
+  statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

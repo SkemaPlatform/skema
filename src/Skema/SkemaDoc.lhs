@@ -247,6 +247,20 @@ skemaDocDeleteKernel skdoc idx = skdoc {
 \end{code}
 
 \begin{code}
+skemaDocUpdateKernel :: SkemaDoc -> Int -> Kernel -> SkemaDoc
+skemaDocUpdateKernel skdoc idx krn = maybe skdoc changeOldKernel maybeOldKrn
+  where
+    maybeOldKrn = MI.lookup idx $ library skdoc
+    changeOldKernel oldKrn = skdoc {
+      library = MI.insert idx krn (MI.delete idx $ library skdoc),
+      arrows = if (iopoints oldKrn) /= (iopoints krn) 
+               then filter checkArrow $ arrows skdoc 
+               else arrows skdoc
+      }
+    checkArrow arr = (outputNode arr /= idx) && (inputNode arr /= idx)
+\end{code}
+
+\begin{code}
 nodeName :: SkemaDoc -> Node -> String
 nodeName skdoc node = maybe "*noname*" name maybeKernel
     where

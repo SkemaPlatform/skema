@@ -21,15 +21,19 @@ module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Data.Maybe( isNothing )
+import Data.Char( isAlphaNum, isAlpha )
 import Control.Monad( when )
 import Graphics.UI.Gtk( 
-  get, containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew, 
-  widgetDestroy )
+  on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew, 
+  widgetDestroy, widgetGetState, widgetModifyBase, Color(..) )
 import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
   ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
 import Graphics.UI.Gtk.Display.Label( labelNew )
+import Graphics.UI.Gtk.Entry.Editable( editableChanged )
+import Graphics.UI.Gtk.Entry.Entry( entryNew, entryText, entrySetText )
+import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
 import Graphics.UI.Gtk.SourceView( 
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
@@ -43,8 +47,14 @@ import Paths_skema( getDataDir )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-showNodeCLWindow :: Kernel -> IO Kernel
-showNodeCLWindow krn = do
+badColor, goodColor :: Color
+badColor = Color (229*256) (142*256) (142*256)
+goodColor = Color (180*256) (244*256) (210*256)
+\end{code}
+
+\begin{code}
+showNodeCLWindow :: Kernel -> [String] -> IO Kernel
+showNodeCLWindow krn usedNames = do
   window <- dialogNew
   widgetSetSizeRequest window 640 480
   
@@ -70,6 +80,16 @@ showNodeCLWindow krn = do
   sw <- scrolledWindowNew Nothing Nothing
   containerAdd sw sourceview
   
+  hbox0 <- hBoxNew True 0
+  lblName <- labelNew $ Just "Name:"
+  boxPackStart hbox0 lblName PackNatural 0
+  eName <- entryNew 
+  entrySetText eName $ name krn
+  eNameState <- widgetGetState eName 
+  widgetModifyBase eName eNameState goodColor
+  boxPackStart hbox0 eName PackGrow 0
+  boxPackStart internal hbox0 PackNatural 0
+  
   lbl0 <- labelNew $ Just "Input Parameters"
   lbl1 <- labelNew $ Just "Output Parameters"
   boxPackStart internal lbl0 PackNatural 0
@@ -77,6 +97,12 @@ showNodeCLWindow krn = do
   lbl2 <- labelNew $ Just "Kernel Body"
   boxPackStart internal lbl2 PackNatural 0
   boxPackStart internal sw PackGrow 0
+  
+  _ <- eName `on` editableChanged $ do
+    newName <- get eName entryText
+    if validName newName usedNames 
+      then widgetModifyBase eName eNameState goodColor
+      else widgetModifyBase eName eNameState badColor
 
   _ <- dialogAddButton window stockApply ResponseAccept
   _ <- dialogAddButton window stockCancel ResponseReject
@@ -84,13 +110,32 @@ showNodeCLWindow krn = do
   widgetShowAll window 
   
   resp <- dialogRun window 
-  widgetDestroy window
-  print resp
   
-  case resp of
+  newkrn <- case resp of
     ResponseAccept -> do
       newBody <- get sbuff textBufferText
-      return krn { body = newBody }
-      
+      newName <- get eName entryText
+      return krn { body = newBody, 
+                   name = if validName newName usedNames
+                          then newName 
+                          else name krn 
+                 }
+  
     _ -> return krn
+    
+  widgetDestroy window
+  return newkrn
 \end{code}
+
+\begin{code}
+validName :: String -> [String] -> Bool
+validName cad xs = checkLength && checkDigits 
+                   && (checkInit.head) cad && cad `notElem` xs
+  where
+    checkLength = (length cad) > 0
+    checkDigits = all checkChar cad
+    checkChar c = (isAlphaNum c) || (c == '_')
+    checkInit c = (isAlpha c) || (c == '_')
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
