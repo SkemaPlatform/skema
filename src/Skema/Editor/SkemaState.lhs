@@ -16,11 +16,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Skema.Editor.SkemaState
-    ( SkemaState(..), XS(..), io, runXS, get, put, trace, whenXS
-    , statePutSelectedPos, statePutSelectedPos2, statePutSelectedElem
-    , statePutSkemaDoc, stateGet, stateSelectElement, stateInsertNewArrow ) 
-        where
+module Skema.Editor.SkemaState( 
+  SkemaState(..), emptySkemaState, XS(..), io, runXS, get, put, trace, whenXS, 
+  statePutSelectedPos, statePutSelectedPos2, statePutSelectedElem, 
+  statePutSkemaDoc, stateGet, stateSelectElement, stateInsertNewArrow ) 
+       where
 \end{code}
 
 \begin{code}
@@ -29,10 +29,10 @@ import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
 import qualified Data.IntMap as M( assocs )
 import System.IO( hPutStrLn, stderr )
-import Skema.Editor.Types( Pos2D )
-import Skema.SkemaDoc
-    ( SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement
-    , insertNewArrow )
+import Skema.Editor.Types( Pos2D(..) )
+import Skema.SkemaDoc( 
+  SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement, 
+  insertNewArrow, emptySkemaDoc )
 \end{code}
 
 \begin{code}
@@ -42,7 +42,13 @@ data SkemaState = SkemaState
     , selectedPos :: !Pos2D -- ^ last selected position
     , selectedPos2 :: !Pos2D -- ^ additional selected position
     , selectedElem :: Maybe SelectedElement -- ^ current selected element 
+    , selectedKernel :: Maybe Int -- ^ current selected kernel
     }
+\end{code}
+
+\begin{code}
+emptySkemaState :: SkemaState
+emptySkemaState = SkemaState emptySkemaDoc (Pos2D (0,0)) (Pos2D (0,0)) Nothing Nothing
 \end{code}
 
 \begin{code}

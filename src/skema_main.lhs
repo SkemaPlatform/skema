@@ -26,7 +26,7 @@ import System.IO.Unsafe( unsafePerformIO )
 import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain, getText )
 import Paths_skema( getDataFileName, version )
-import Skema.Editor.SkemaState( SkemaState(..) )
+import Skema.Editor.SkemaState( SkemaState(..), emptySkemaState )
 import Skema.Editor.Types( Pos2D(..) )
 import Skema.Types( IOPointType(..), IOPointDataType(..) )
 import Skema.SkemaDoc
@@ -100,13 +100,7 @@ launch = do
   window <- xmlGetWidget xml castToWindow "main"
   _ <- onDestroy window mainQuit
  
-  let st = SkemaState 
-           { skemaDoc = testDoc
-           , selectedPos = Pos2D (0,0) 
-           , selectedPos2 = Pos2D (0,0) 
-           , selectedElem = Nothing }
-
-  state <- newMVar st
+  state <- newMVar $ emptySkemaState { skemaDoc = testDoc }
 
   prepareMainWindow xml state      
   
