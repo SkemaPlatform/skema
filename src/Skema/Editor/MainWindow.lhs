@@ -97,8 +97,7 @@ prepareMainWindow xml state = do
     (mx,my) <- eventCoordinates
     (path, _) <- liftIO $ treeViewGetCursor ktree
     iter <- liftIO $ treeModelGetIter storeKernels path
-    when (isJust iter) $ do 
-      liftIO . modifyMVar_ state $ \sks -> do
+    when (isJust iter) . liftIO . modifyMVar_ state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
         (_,new_sks) <- runXS sks $ insertElement i mx my canvas
         return new_sks
@@ -133,10 +132,8 @@ prepareMainWindow xml state = do
   btn_new_kernel <- xmlGetWidget xml castToToolButton "ktb_new"
   _ <- onToolButtonClicked btn_new_kernel $ do 
     modifyMVar_ state $ \sks -> do
-      (_,new_sks) <- runXS sks $ newKernel
-      listStoreClear storeKernels
-      mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
-      return new_sks{ selectedKernel = Nothing }
+      (_,new_sks) <- runXS sks newKernel
+      clearKernelList storeKernels new_sks
     widgetQueueDraw canvas    
   
   btn_edit_kernel <- xmlGetWidget xml castToToolButton "ktb_edit"
@@ -146,7 +143,9 @@ prepareMainWindow xml state = do
     when (isJust iter) $ do
       (i,k) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
       newk <- showNodeCLWindow k
-      print newk
+      when (newk /= k) . modifyMVar_ state $ \sks -> do
+        (_,new_sks) <- runXS sks $ updateKernel i newk
+        return new_sks
     
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
@@ -156,9 +155,7 @@ prepareMainWindow xml state = do
       modifyMVar_ state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
         (_,new_sks) <- runXS sks $ deleteKernel i
-        listStoreClear storeKernels
-        mapM_ (listStoreAppend storeKernels) (extractKernelsTree $ skemaDoc new_sks)
-        return new_sks{ selectedKernel = Nothing }
+        clearKernelList storeKernels new_sks
       widgetQueueDraw canvas
     
   return ()
@@ -202,6 +199,14 @@ extractKernelsTree :: SkemaDoc -> [(Int,Kernel)]
 extractKernelsTree = M.assocs . library
 \end{code}
 
+\begin{code}
+clearKernelList :: ListStore (Int,Kernel) -> SkemaState -> IO SkemaState
+clearKernelList list sks = do
+  listStoreClear list
+  mapM_ (listStoreAppend list) (extractKernelsTree $ skemaDoc sks)
+  return sks{ selectedKernel = Nothing }
+\end{code}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 selectElement :: Double -> Double -> XS ()
@@ -233,7 +238,7 @@ insertNewNode :: Int -> Double -> Double -> XS ()
 insertNewNode idx x y = do
   oldDoc <- stateGet skemaDoc
   let keys = M.keys.nodes $ oldDoc
-      last_i = if null keys then 0 else (maximum keys) + 1
+      last_i = if null keys then 0 else maximum keys + 1
       new_node = NodeKernel (Pos2D (x,y)) idx
   statePutSkemaDoc $ oldDoc { 
                          nodes = M.insert last_i new_node $ nodes oldDoc}
@@ -317,6 +322,14 @@ deleteKernel :: Int -> XS ()
 deleteKernel idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteKernel oldDoc idx
+\end{code}
+
+\begin{code}
+updateKernel :: Int -> Kernel -> XS ()
+updateKernel idx krn = do
+  oldDoc <- stateGet skemaDoc
+--  statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn
+  return ()
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

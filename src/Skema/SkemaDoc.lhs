@@ -119,7 +119,7 @@ data IOPoint = IOPoint
     { iopName :: !String 
     , iopDataType :: !IOPointDataType
     , iopType :: !IOPointType }
-    deriving( Show )
+    deriving( Show, Eq )
 \end{code}
 
 \begin{code}
@@ -132,7 +132,7 @@ data Kernel = Kernel
     { name :: String 
     , body :: String
     , iopoints :: MI.IntMap IOPoint }
-    deriving( Show )
+    deriving( Show, Eq )
 \end{code}
 
 \begin{code}
@@ -148,7 +148,7 @@ minimalKernel kns = emptyKernel {
            [IOPoint "x" IOfloat InputPoint, 
             IOPoint "y" IOfloat OutputPoint]}
   where
-    newName = head $ dropWhile (flip elem oldNames) wantedNames
+    newName = head $ dropWhile (`elem` oldNames) wantedNames
     oldNames = map name $ MI.elems kns
     wantedNames = zipWith (++) (repeat "NewKernel") (map show ([0..]::[Int]))
 \end{code}
@@ -230,7 +230,7 @@ skemaDocInsertKernel skdoc kernel = skdoc { library = MI.insert newKey kernel ol
   where
     oldLibrary = library skdoc
     keys = MI.keys oldLibrary
-    newKey = if null keys then 1 else 1 + (maximum keys)
+    newKey = if null keys then 1 else 1 + maximum keys
 \end{code}
 
 \begin{code}
@@ -242,8 +242,8 @@ skemaDocDeleteKernel skdoc idx = skdoc {
   }
   where
     deletedNodes = map fst . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
-    checkArrow arr = (not $ (outputNode arr) `elem` deletedNodes)
-                     && (not $ (inputNode arr) `elem` deletedNodes)
+    checkArrow arr = (outputNode arr `notElem` deletedNodes)
+                     && (inputNode arr `notElem` deletedNodes)
 \end{code}
 
 \begin{code}

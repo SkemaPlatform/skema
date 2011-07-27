@@ -87,12 +87,10 @@ showNodeCLWindow krn = do
   widgetDestroy window
   print resp
   
-  newkrn <- case resp of
+  case resp of
     ResponseAccept -> do
       newBody <- get sbuff textBufferText
       return krn { body = newBody }
       
     _ -> return krn
-  
-  return newkrn
 \end{code}

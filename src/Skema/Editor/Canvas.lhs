@@ -66,7 +66,7 @@ drawSkemaDoc _ _ skdoc sel = do
   Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
   when (isJust sel) $ 
     mapM_ drawSelKernel $
-    filter ((==(fromJust sel)).kernelIdx) . M.elems.nodes $ skdoc
+    filter ((== fromJust sel).kernelIdx) . M.elems.nodes $ skdoc
   mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
   mapM_ (drawArrow skdoc) (arrows skdoc)
 \end{code}
