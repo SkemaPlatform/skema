@@ -24,7 +24,7 @@ import Data.List( partition, find )
 import Control.Monad( msum, liftM )
 import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI
-    ( IntMap, empty, lookup, elems, assocs, fromList, insert, keys )
+    ( IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, filter )
 import qualified Data.Map as M( fromList )
 import Skema.Editor.Types
     ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
@@ -39,7 +39,6 @@ import Skema.ProgramFlow
 data Node = NodeKernel
     { position :: !Pos2D
     , kernelIdx :: !Int }
-    | NodeInt !Int
             deriving( Show )
 \end{code}
 
@@ -217,6 +216,7 @@ data SkemaDoc = SkemaDoc
     { library :: MI.IntMap Kernel
     , nodes :: MI.IntMap Node 
     , arrows :: [NodeArrow] }
+    deriving( Show )
 \end{code}
 
 \begin{code}
@@ -229,7 +229,21 @@ skemaDocInsertKernel :: SkemaDoc -> Kernel -> SkemaDoc
 skemaDocInsertKernel skdoc kernel = skdoc { library = MI.insert newKey kernel oldLibrary }
   where
     oldLibrary = library skdoc
-    newKey = 1 + (maximum $ MI.keys oldLibrary)
+    keys = MI.keys oldLibrary
+    newKey = if null keys then 1 else 1 + (maximum keys)
+\end{code}
+
+\begin{code}
+skemaDocDeleteKernel :: SkemaDoc -> Int -> SkemaDoc
+skemaDocDeleteKernel skdoc idx = skdoc { 
+  library = MI.delete idx $ library skdoc,
+  nodes = MI.filter ((/=idx) . kernelIdx) $ nodes skdoc,
+  arrows = filter checkArrow $ arrows skdoc
+  }
+  where
+    deletedNodes = map fst . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
+    checkArrow arr = (not $ (outputNode arr) `elem` deletedNodes)
+                     && (not $ (inputNode arr) `elem` deletedNodes)
 \end{code}
 
 \begin{code}
