@@ -29,7 +29,7 @@ import qualified Graphics.Rendering.Cairo as Cr
     , selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo
     , setDash )
 import Skema.SkemaDoc
-    ( SkemaDoc(..), NodeArrow(..), Node, IOPoint, SelectedElement(..), nodePosx
+    ( SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, SelectedElement(..), nodePosx
     , nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
     , nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition
     , nodeIOPPosition, isInputPoint, iopName, iopDataType )
@@ -58,14 +58,32 @@ instance ElemColor IOPoint where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-drawSkemaDoc :: Double -> Double -> SkemaDoc -> Cr.Render ()
-drawSkemaDoc _ _ skdoc = do
+drawSkemaDoc :: Double -> Double -> SkemaDoc -> Maybe Int -> Cr.Render ()
+drawSkemaDoc _ _ skdoc sel = do
   Cr.setSourceRGB 0.45 0.45 0.45
   Cr.paint
 
   Cr.selectFontFace "arial" Cr.FontSlantNormal Cr.FontWeightNormal
+  when (isJust sel) $ 
+    mapM_ drawSelKernel $
+    filter ((==(fromJust sel)).kernelIdx) . M.elems.nodes $ skdoc
   mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
   mapM_ (drawArrow skdoc) (arrows skdoc)
+\end{code}
+
+\begin{code}
+drawSelKernel :: Node -> Cr.Render ()
+drawSelKernel node = do
+  let px = nodePosx node
+      py = nodePosy node
+      wid = nodeWidth node
+      hei = nodeHeight node
+      sinc = 4
+
+  -- light
+  Cr.setSourceRGBA 1 1 1 0.4
+  roundedRectanglePath (px-sinc) (py+sinc) (wid+sinc*2) hei 4
+  Cr.fill
 \end{code}
 
 \begin{code}

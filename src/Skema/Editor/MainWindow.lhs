@@ -119,7 +119,13 @@ prepareMainWindow xml state = do
   
   _ <- ktree `on` cursorChanged $ do
     (path, _) <- treeViewGetCursor ktree
-    unless (null path) $ print path
+    iter <- treeModelGetIter storeKernels path
+    case iter of
+      Nothing -> modifyMVar_ state $ \sks -> return $ sks { selectedKernel = Nothing }
+      Just val -> modifyMVar_ state $ \sks -> do
+        (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex val)
+        return $ sks { selectedKernel = Just i }
+    widgetQueueDraw canvas
          
   btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
