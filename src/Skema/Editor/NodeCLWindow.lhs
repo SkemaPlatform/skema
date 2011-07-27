@@ -22,27 +22,29 @@ module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
 \begin{code}
 import Data.Maybe( isNothing )
 import Control.Monad( when )
-import Control.Concurrent.MVar( MVar )
-import Skema.Editor.SkemaState( SkemaState(..) )
-import Graphics.UI.Gtk
-  ( containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew )
+import Graphics.UI.Gtk( 
+  get, containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew, 
+  widgetDestroy )
+import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
-  dialogNew, dialogRun, dialogGetUpper )
+  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
 import Graphics.UI.Gtk.Display.Label( labelNew )
-import Graphics.UI.Gtk.SourceView
-  ( sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath
-  , sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage
-  , sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme
-  , sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme
-  , sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer )
+import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
+import Graphics.UI.Gtk.SourceView( 
+  sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
+  sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
+  sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme, 
+  sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme, 
+  sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer )
+import Skema.SkemaDoc( Kernel(..) )
 import Paths_skema( getDataDir )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-showNodeCLWindow :: MVar SkemaState -> IO ()
-showNodeCLWindow _ = do
+showNodeCLWindow :: Kernel -> IO Kernel
+showNodeCLWindow krn = do
   window <- dialogNew
   widgetSetSizeRequest window 640 480
   
@@ -62,7 +64,8 @@ showNodeCLWindow _ = do
   sourceBufferSetLanguage sbuff slang
   sourceBufferSetStyleScheme sbuff (Just ssty)
   sourceBufferSetHighlightSyntax sbuff True
-  
+  textBufferSetText sbuff (body krn)
+
   sourceview <- sourceViewNewWithBuffer sbuff
   sw <- scrolledWindowNew Nothing Nothing
   containerAdd sw sourceview
@@ -74,10 +77,22 @@ showNodeCLWindow _ = do
   lbl2 <- labelNew $ Just "Kernel Body"
   boxPackStart internal lbl2 PackNatural 0
   boxPackStart internal sw PackGrow 0
+
+  _ <- dialogAddButton window stockApply ResponseAccept
+  _ <- dialogAddButton window stockCancel ResponseReject
   
   widgetShowAll window 
   
-  _ <- dialogRun window 
-
-  return ()
+  resp <- dialogRun window 
+  widgetDestroy window
+  print resp
+  
+  newkrn <- case resp of
+    ResponseAccept -> do
+      newBody <- get sbuff textBufferText
+      return krn { body = newBody }
+      
+    _ -> return krn
+  
+  return newkrn
 \end{code}

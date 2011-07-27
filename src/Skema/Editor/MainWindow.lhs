@@ -20,7 +20,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Control.Monad( when, unless )
+import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_ )
 import qualified Data.IntMap as M( adjust, keys, insert, assocs, elems )
@@ -142,9 +142,11 @@ prepareMainWindow xml state = do
   btn_edit_kernel <- xmlGetWidget xml castToToolButton "ktb_edit"
   _ <- onToolButtonClicked btn_edit_kernel $ do
     (path, _) <- treeViewGetCursor ktree
-    unless (null path) . modifyMVar_ state $ \sks -> do
-      showNodeCLWindow state      
-      return sks
+    iter <- treeModelGetIter storeKernels path
+    when (isJust iter) $ do
+      (i,k) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
+      newk <- showNodeCLWindow k
+      print newk
     
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
