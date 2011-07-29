@@ -99,7 +99,7 @@ showNodeCLWindow krn usedNames = do
   boxPackStart internal hbox1 PackNatural 0
   
   -- input widgets
-  vboxInput <- vBoxNew True 0
+  vboxInput <- vBoxNew False 0
   boxPackStart hbox1 vboxInput PackNatural 0
   lbl0 <- labelNew $ Just "Input Parameters"
   boxPackStart vboxInput lbl0 PackNatural 0
@@ -108,58 +108,21 @@ showNodeCLWindow krn usedNames = do
   storeInputs <- listStoreNew [("test1","float"),("test2","int")] :: IO (ListStore (String,String))
   boxPackStart vboxInput inputList PackNatural 0
   
-  treeViewSetModel inputList storeInputs
-  treeViewSetHeadersVisible inputList True
-
-  col1 <- treeViewColumnNew
-  renderer1 <- cellRendererTextNew
-  treeViewColumnSetTitle col1 "Name"
-  treeViewColumnPackStart col1 renderer1 True
-  cellLayoutSetAttributes col1 renderer1 storeInputs $ \(r,_) -> [ 
-    cellText := r, cellTextEditable := True ]
-  _ <- treeViewAppendColumn inputList col1
-  _ <- renderer1 `on` edited $ \ns str -> do
-    when (not . null $ ns) $ do
-      let n = head ns
-      (val1,val2) <- listStoreGetValue storeInputs n
-      when (val1 /= str) $ do
-        listStoreSetValue storeInputs n (str,val2)
-        dialogSetResponseSensitive window ResponseAccept True
-  
-  clTypes <- listStoreNew ["float", "int"]
-  let clColumn = makeColumnIdString 0
-  customStoreSetColumn clTypes clColumn id
-  
-  col2 <- treeViewColumnNew
-  renderer2 <- cellRendererComboNew
-  treeViewColumnSetTitle col2 "Type"
-  treeViewColumnPackStart col2 renderer2 False
-  cellLayoutSetAttributes col2 renderer2 storeInputs $ \(_,t) -> [ 
-    cellText := t,
-    cellComboTextModel := (clTypes, clColumn), 
-    cellComboHasEntry := False,
-    cellTextEditable := True ]
-  _ <- treeViewAppendColumn inputList col2
-  _ <- renderer2 `on` edited $ \ns str -> do
-    when (not . null $ ns) $ do
-      let n = head ns
-      (val1,val2) <- listStoreGetValue storeInputs n
-      when (val2 /= str) $ do
-        listStoreSetValue storeInputs n (val1,str)
-        dialogSetResponseSensitive window ResponseAccept True
-    
-    
-  col3 <- treeViewColumnNew
-  renderer3 <- cellRendererToggleNew
-  treeViewColumnSetTitle col3 "Delete?"
-  treeViewColumnPackStart col3 renderer3 True
-  _ <- treeViewAppendColumn inputList col3
+  setupParameterList inputList storeInputs $ 
+    dialogSetResponseSensitive window ResponseAccept True
   
   -- output widgets
-  vboxOutput <- vBoxNew True 0
+  vboxOutput <- vBoxNew False 0
   boxPackStart hbox1 vboxOutput PackNatural 0
   lbl1 <- labelNew $ Just "Output Parameters"
   boxPackStart vboxOutput lbl1 PackNatural 0
+  
+  outputList <- treeViewNew
+  storeOutputs <- listStoreNew [("test1","float")] :: IO (ListStore (String,String))
+  boxPackStart vboxOutput outputList PackNatural 0
+  
+  setupParameterList outputList storeOutputs $ 
+    dialogSetResponseSensitive window ResponseAccept True
   
   -- body widgets
   lbl2 <- labelNew $ Just "Kernel Body"
@@ -213,6 +176,58 @@ showNodeCLWindow krn usedNames = do
     
   widgetDestroy window
   return newkrn
+\end{code}
+
+\begin{code}
+--setupParameterList :: TreeView -> List
+setupParameterList list store whenChanged= do
+  treeViewSetModel list store
+  treeViewSetHeadersVisible list True
+  
+  col1 <- treeViewColumnNew
+  renderer1 <- cellRendererTextNew
+  treeViewColumnSetTitle col1 "Name"
+  treeViewColumnPackStart col1 renderer1 True
+  cellLayoutSetAttributes col1 renderer1 store $ \(r,_) -> [ 
+    cellText := r, cellTextEditable := True ]
+  _ <- treeViewAppendColumn list col1
+  _ <- renderer1 `on` edited $ \ns str -> do
+    when (not . null $ ns) $ do
+      let n = head ns
+      (val1,val2) <- listStoreGetValue store n
+      when (val1 /= str) $ do
+        listStoreSetValue store n (str,val2)
+        whenChanged
+  
+  clTypes <- listStoreNew ["float", "int"]
+  let clColumn = makeColumnIdString 0
+  customStoreSetColumn clTypes clColumn id
+  
+  col2 <- treeViewColumnNew
+  renderer2 <- cellRendererComboNew
+  treeViewColumnSetTitle col2 "Type"
+  treeViewColumnPackStart col2 renderer2 False
+  cellLayoutSetAttributes col2 renderer2 store $ \(_,t) -> [ 
+    cellText := t,
+    cellComboTextModel := (clTypes, clColumn), 
+    cellComboHasEntry := False,
+    cellTextEditable := True ]
+  _ <- treeViewAppendColumn list col2
+  _ <- renderer2 `on` edited $ \ns str -> do
+    when (not . null $ ns) $ do
+      let n = head ns
+      (val1,val2) <- listStoreGetValue store n
+      when (val2 /= str) $ do
+        listStoreSetValue store n (val1,str)
+        whenChanged
+        
+  col3 <- treeViewColumnNew
+  renderer3 <- cellRendererToggleNew
+  treeViewColumnSetTitle col3 "Delete?"
+  treeViewColumnPackStart col3 renderer3 True
+  _ <- treeViewAppendColumn list col3
+  
+  return ()
 \end{code}
 
 \begin{code}
