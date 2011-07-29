@@ -40,12 +40,13 @@ import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
 import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
 import Graphics.UI.Gtk.ModelView( 
-  treeViewNew, treeViewSetModel, treeViewSetHeadersVisible, treeViewColumnNew, 
-  treeViewColumnSetTitle, treeViewColumnPackStart, treeViewAppendColumn, 
-  ListStore, listStoreNew, listStoreGetValue, listStoreSetValue, 
-  cellRendererTextNew, cellLayoutSetAttributes, cellText, cellTextEditable, 
-  cellRendererComboNew, cellComboTextModel, cellComboHasEntry, makeColumnIdString, 
-  customStoreSetColumn, edited, cellRendererToggleNew )
+  TreeView, treeViewNew, treeViewSetModel, treeViewSetHeadersVisible, 
+  treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
+  treeViewAppendColumn, ListStore, listStoreNew, listStoreGetValue, 
+  listStoreSetValue, cellRendererTextNew, cellLayoutSetAttributes, cellText, 
+  cellTextEditable, cellRendererComboNew, cellComboTextModel, 
+  cellComboHasEntry, makeColumnIdString, customStoreSetColumn, edited, 
+  cellRendererToggleNew )
 import Graphics.UI.Gtk.SourceView( 
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
@@ -179,8 +180,8 @@ showNodeCLWindow krn usedNames = do
 \end{code}
 
 \begin{code}
---setupParameterList :: TreeView -> List
-setupParameterList list store whenChanged= do
+setupParameterList :: TreeView -> ListStore (String,String) -> IO () -> IO ()
+setupParameterList list store applyChanged = do
   treeViewSetModel list store
   treeViewSetHeadersVisible list True
   
@@ -197,7 +198,7 @@ setupParameterList list store whenChanged= do
       (val1,val2) <- listStoreGetValue store n
       when (val1 /= str) $ do
         listStoreSetValue store n (str,val2)
-        whenChanged
+        applyChanged
   
   clTypes <- listStoreNew ["float", "int"]
   let clColumn = makeColumnIdString 0
@@ -219,7 +220,7 @@ setupParameterList list store whenChanged= do
       (val1,val2) <- listStoreGetValue store n
       when (val2 /= str) $ do
         listStoreSetValue store n (val1,str)
-        whenChanged
+        applyChanged
         
   col3 <- treeViewColumnNew
   renderer3 <- cellRendererToggleNew
