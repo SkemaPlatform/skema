@@ -55,6 +55,7 @@ import Graphics.UI.Gtk.SourceView(
   sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer, 
   sourceBufferBeginNotUndoableAction, sourceBufferEndNotUndoableAction )
 import Skema.SkemaDoc( Kernel(..) )
+import Skema.Types( openclTypeNames )
 import Paths_skema( getDataDir )
 \end{code}
 
@@ -200,7 +201,7 @@ setupParameterList list store applyChanged = do
         listStoreSetValue store n (str,val2)
         applyChanged
   
-  clTypes <- listStoreNew ["float", "int"]
+  clTypes <- listStoreNew openclTypeNames
   let clColumn = makeColumnIdString 0
   customStoreSetColumn clTypes clColumn id
   
