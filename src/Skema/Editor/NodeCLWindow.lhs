@@ -43,10 +43,10 @@ import Graphics.UI.Gtk.ModelView(
   TreeView, treeViewNew, treeViewSetModel, treeViewSetHeadersVisible, 
   treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
   treeViewAppendColumn, ListStore, listStoreNew, listStoreGetValue, 
-  listStoreSetValue, cellRendererTextNew, cellLayoutSetAttributes, cellText, 
-  cellTextEditable, cellRendererComboNew, cellComboTextModel, 
-  cellComboHasEntry, makeColumnIdString, customStoreSetColumn, edited, 
-  cellRendererToggleNew )
+  listStoreSetValue, listStoreGetSize, cellRendererTextNew, 
+  cellLayoutSetAttributes, cellText, cellTextEditable, cellRendererComboNew, 
+  cellComboTextModel, cellComboHasEntry, makeColumnIdString, 
+  customStoreSetColumn, edited, cellRendererToggleNew, cellToggled )
 import Graphics.UI.Gtk.SourceView( 
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
@@ -228,6 +228,10 @@ setupParameterList list store applyChanged = do
   treeViewColumnSetTitle col3 "Delete?"
   treeViewColumnPackStart col3 renderer3 True
   _ <- treeViewAppendColumn list col3
+  _ <- renderer3 `on` cellToggled $ \path -> do
+    npars <- listStoreGetSize store
+    when (npars > 1) $ do
+      print path
   
   return ()
 \end{code}
