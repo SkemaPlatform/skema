@@ -23,18 +23,29 @@ module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
 import Data.Maybe( isNothing )
 import Data.Char( isAlphaNum, isAlpha )
 import Control.Monad( when )
+import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
-  on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, scrolledWindowNew, 
-  widgetDestroy, widgetGetState, widgetModifyBase, Color(..), windowSetDefault )
+  on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, 
+  scrolledWindowNew, widgetDestroy, widgetGetState, widgetModifyBase, Color(..), 
+  windowSetDefault, bufferChanged )
 import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
-  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
+  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton, 
+  dialogSetResponseSensitive )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Entry.Editable( editableChanged )
 import Graphics.UI.Gtk.Entry.Entry( entryNew, entryText, entrySetText )
 import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
+import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
+import Graphics.UI.Gtk.ModelView( 
+  treeViewNew, treeViewSetModel, treeViewSetHeadersVisible, treeViewColumnNew, 
+  treeViewColumnSetTitle, treeViewColumnPackStart, treeViewAppendColumn, 
+  ListStore, listStoreNew, listStoreGetValue, listStoreSetValue, 
+  cellRendererTextNew, cellLayoutSetAttributes, cellText, cellTextEditable, 
+  cellRendererComboNew, cellComboTextModel, cellComboHasEntry, makeColumnIdString, 
+  customStoreSetColumn, edited, cellRendererToggleNew )
 import Graphics.UI.Gtk.SourceView( 
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
@@ -71,18 +82,8 @@ showNodeCLWindow krn usedNames = do
   ssty <- sourceStyleSchemeManagerGetScheme slsty "classic"
   
   internal <- dialogGetUpper window
-  sbuff <- sourceBufferNew Nothing
-  sourceBufferSetLanguage sbuff slang
-  sourceBufferSetStyleScheme sbuff (Just ssty)
-  sourceBufferSetHighlightSyntax sbuff True
-  sourceBufferBeginNotUndoableAction sbuff
-  textBufferSetText sbuff (body krn)
-  sourceBufferEndNotUndoableAction sbuff
-
-  sourceview <- sourceViewNewWithBuffer sbuff
-  sw <- scrolledWindowNew Nothing Nothing
-  containerAdd sw sourceview
   
+  -- kernel name widgets
   hbox0 <- hBoxNew True 0
   lblName <- labelNew $ Just "Name:"
   boxPackStart hbox0 lblName PackNatural 0
@@ -93,29 +94,111 @@ showNodeCLWindow krn usedNames = do
   boxPackStart hbox0 eName PackGrow 0
   boxPackStart internal hbox0 PackNatural 0
   
+  -- parameters
+  hbox1 <- hBoxNew True 0  
+  boxPackStart internal hbox1 PackNatural 0
+  
+  -- input widgets
+  vboxInput <- vBoxNew True 0
+  boxPackStart hbox1 vboxInput PackNatural 0
   lbl0 <- labelNew $ Just "Input Parameters"
+  boxPackStart vboxInput lbl0 PackNatural 0
+  
+  inputList <- treeViewNew
+  storeInputs <- listStoreNew [("test1","float"),("test2","int")] :: IO (ListStore (String,String))
+  boxPackStart vboxInput inputList PackNatural 0
+  
+  treeViewSetModel inputList storeInputs
+  treeViewSetHeadersVisible inputList True
+
+  col1 <- treeViewColumnNew
+  renderer1 <- cellRendererTextNew
+  treeViewColumnSetTitle col1 "Name"
+  treeViewColumnPackStart col1 renderer1 True
+  cellLayoutSetAttributes col1 renderer1 storeInputs $ \(r,_) -> [ 
+    cellText := r, cellTextEditable := True ]
+  _ <- treeViewAppendColumn inputList col1
+  _ <- renderer1 `on` edited $ \ns str -> do
+    when (not . null $ ns) $ do
+      let n = head ns
+      (val1,val2) <- listStoreGetValue storeInputs n
+      when (val1 /= str) $ do
+        listStoreSetValue storeInputs n (str,val2)
+        dialogSetResponseSensitive window ResponseAccept True
+  
+  clTypes <- listStoreNew ["float", "int"]
+  let clColumn = makeColumnIdString 0
+  customStoreSetColumn clTypes clColumn id
+  
+  col2 <- treeViewColumnNew
+  renderer2 <- cellRendererComboNew
+  treeViewColumnSetTitle col2 "Type"
+  treeViewColumnPackStart col2 renderer2 False
+  cellLayoutSetAttributes col2 renderer2 storeInputs $ \(_,t) -> [ 
+    cellText := t,
+    cellComboTextModel := (clTypes, clColumn), 
+    cellComboHasEntry := False,
+    cellTextEditable := True ]
+  _ <- treeViewAppendColumn inputList col2
+  _ <- renderer2 `on` edited $ \ns str -> do
+    when (not . null $ ns) $ do
+      let n = head ns
+      (val1,val2) <- listStoreGetValue storeInputs n
+      when (val2 /= str) $ do
+        listStoreSetValue storeInputs n (val1,str)
+        dialogSetResponseSensitive window ResponseAccept True
+    
+    
+  col3 <- treeViewColumnNew
+  renderer3 <- cellRendererToggleNew
+  treeViewColumnSetTitle col3 "Delete?"
+  treeViewColumnPackStart col3 renderer3 True
+  _ <- treeViewAppendColumn inputList col3
+  
+  -- output widgets
+  vboxOutput <- vBoxNew True 0
+  boxPackStart hbox1 vboxOutput PackNatural 0
   lbl1 <- labelNew $ Just "Output Parameters"
-  boxPackStart internal lbl0 PackNatural 0
-  boxPackStart internal lbl1 PackNatural 0
+  boxPackStart vboxOutput lbl1 PackNatural 0
+  
+  -- body widgets
   lbl2 <- labelNew $ Just "Kernel Body"
   boxPackStart internal lbl2 PackNatural 0
+  sbuff <- sourceBufferNew Nothing
+  sourceBufferSetLanguage sbuff slang
+  sourceBufferSetStyleScheme sbuff (Just ssty)
+  sourceBufferSetHighlightSyntax sbuff True
+  sourceBufferBeginNotUndoableAction sbuff
+  textBufferSetText sbuff (body krn)
+  sourceBufferEndNotUndoableAction sbuff
+  sourceview <- sourceViewNewWithBuffer sbuff
+  sw <- scrolledWindowNew Nothing Nothing
+  containerAdd sw sourceview
   boxPackStart internal sw PackGrow 0
   
-  _ <- eName `on` editableChanged $ do
-    newName <- get eName entryText
-    if validName newName usedNames 
-      then widgetModifyBase eName eNameState goodColor
-      else widgetModifyBase eName eNameState badColor
-
+  -- buttons
   acceptButton <- dialogAddButton window stockApply ResponseAccept
-  _ <- dialogAddButton window stockCancel ResponseReject
-  
+  _ <- dialogAddButton window stockCancel ResponseReject  
   windowSetDefault window $ Just acceptButton
+  
+  dialogSetResponseSensitive window ResponseAccept False
   
   widgetShowAll window 
   
-  resp <- dialogRun window 
+  -- events
+  _ <- eName `on` editableChanged $ do
+    newName <- get eName entryText
+    dialogSetResponseSensitive window ResponseAccept True
+    if validName newName usedNames 
+      then widgetModifyBase eName eNameState goodColor
+      else widgetModifyBase eName eNameState badColor
+           
+  _ <- sbuff `on` bufferChanged $ do
+    dialogSetResponseSensitive window ResponseAccept True
+    
   
+  -- get the response and return
+  resp <- dialogRun window   
   newkrn <- case resp of
     ResponseAccept -> do
       newBody <- get sbuff textBufferText
