@@ -32,6 +32,7 @@ import Skema.Types( IOPointType(..), IOPointDataType(..), isSameBaseType )
 import Skema.ProgramFlow( 
   ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..), 
   emptyProgramFlow )
+import Skema.Util( isAcyclicGraph )
 \end{code}
 
 \begin{code}
@@ -383,6 +384,7 @@ validArrow skdoc ki ji kf jf
     | not sameBase = False
     | not sameType = False
     | (not . null) samearrows = False
+    | hasCycles = False
     | otherwise = True
     where
       samepoints = filter (isSameArrowPoint ki ji kf jf) (arrows skdoc)
@@ -391,12 +393,11 @@ validArrow skdoc ki ji kf jf
       finalType = arrowIOPointType skdoc kf jf
       initDataType = arrowIOPointDataType skdoc ki ji
       finalDataType = arrowIOPointDataType skdoc kf jf
-      sameBase = isJust initDataType 
-                 && isJust finalDataType 
-                 && isSameBaseType (fromJust initDataType) (fromJust finalDataType)
-      sameType = isJust initType 
-                 && isJust finalType 
-                 && fromJust initType /= fromJust finalType
+      sameBase = isSameBaseType (fromJust initDataType) (fromJust finalDataType)
+      sameType = fromJust initType /= fromJust finalType
+      edges = map (outputNode &&& inputNode) . arrows $ skdoc
+      ((kin,_),(kout,_)) = sortArrow (fromJust initType) (ki,ji) (fromJust finalType) (kf,jf)
+      hasCycles = not . isAcyclicGraph $ ((kin,kout):edges)
 \end{code}
 
 \begin{code}
