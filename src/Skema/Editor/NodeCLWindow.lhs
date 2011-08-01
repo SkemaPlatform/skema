@@ -22,17 +22,21 @@ module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
 \begin{code}
 import Data.Maybe( isNothing )
 import Data.Char( isAlphaNum, isAlpha )
-import Control.Monad( when )
+import qualified Data.IntMap as MI( fromList, elems )
+import Control.Monad( when, unless )
+import Control.Arrow( (&&&) )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
   on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, 
   scrolledWindowNew, widgetDestroy, widgetGetState, widgetModifyBase, Color(..), 
-  windowSetDefault, bufferChanged )
+  windowSetDefault, bufferChanged, toWindow )
 import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Windows.Dialog( 
   ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton, 
   dialogSetResponseSensitive )
+import Graphics.UI.Gtk.Windows.MessageDialog( 
+  messageDialogNew, DialogFlags(..), MessageType(..), ButtonsType(..) )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Entry.Editable( editableChanged )
 import Graphics.UI.Gtk.Entry.Entry( entryNew, entryText, entrySetText )
@@ -40,13 +44,19 @@ import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
 import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
 import Graphics.UI.Gtk.ModelView( 
+  -- tree functions
   TreeView, treeViewNew, treeViewSetModel, treeViewSetHeadersVisible, 
   treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
-  treeViewAppendColumn, ListStore, listStoreNew, listStoreGetValue, 
-  listStoreSetValue, listStoreGetSize, cellRendererTextNew, 
-  cellLayoutSetAttributes, cellText, cellTextEditable, cellRendererComboNew, 
-  cellComboTextModel, cellComboHasEntry, makeColumnIdString, 
-  customStoreSetColumn, edited, cellRendererToggleNew, cellToggled )
+  treeViewAppendColumn,
+  -- list functions
+  ListStore, listStoreNew, listStoreGetValue, listStoreSetValue, 
+  listStoreGetSize, listStoreRemove, listStoreAppend, listStoreToList,
+  -- cell functions
+  cellRendererTextNew, cellLayoutSetAttributes, cellText, cellTextEditable, 
+  cellRendererComboNew, cellComboTextModel, cellComboHasEntry, 
+  makeColumnIdString, cellRendererToggleNew, cellToggled,
+  -- additional
+  customStoreSetColumn, edited, editingStarted, stringToTreePath )
 import Graphics.UI.Gtk.SourceView( 
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
@@ -54,8 +64,9 @@ import Graphics.UI.Gtk.SourceView(
   sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme, 
   sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer, 
   sourceBufferBeginNotUndoableAction, sourceBufferEndNotUndoableAction )
-import Skema.SkemaDoc( Kernel(..) )
-import Skema.Types( openclTypeNames )
+import Skema.SkemaDoc( Kernel(..), IOPoint(..), isInputPoint, isOutputPoint )
+import Skema.Types( openclTypeNames, IOPointType(..) )
+import Skema.Util( duplicates )
 import Paths_skema( getDataDir )
 \end{code}
 
@@ -106,11 +117,13 @@ showNodeCLWindow krn usedNames = do
   lbl0 <- labelNew $ Just "Input Parameters"
   boxPackStart vboxInput lbl0 PackNatural 0
   
+  let krnIns = map (iopName &&& show . iopDataType) 
+               . filter isInputPoint . MI.elems $ iopoints krn
   inputList <- treeViewNew
-  storeInputs <- listStoreNew [("test1","float"),("test2","int")] :: IO (ListStore (String,String))
+  storeInputs <- listStoreNew krnIns
   boxPackStart vboxInput inputList PackNatural 0
   
-  setupParameterList inputList storeInputs $ 
+  setupParameterList "inp" inputList storeInputs $ 
     dialogSetResponseSensitive window ResponseAccept True
   
   -- output widgets
@@ -119,11 +132,13 @@ showNodeCLWindow krn usedNames = do
   lbl1 <- labelNew $ Just "Output Parameters"
   boxPackStart vboxOutput lbl1 PackNatural 0
   
+  let krnOuts = map (iopName &&& show . iopDataType) 
+                . filter isOutputPoint . MI.elems $ iopoints krn
   outputList <- treeViewNew
-  storeOutputs <- listStoreNew [("test1","float")] :: IO (ListStore (String,String))
+  storeOutputs <- listStoreNew krnOuts
   boxPackStart vboxOutput outputList PackNatural 0
   
-  setupParameterList outputList storeOutputs $ 
+  setupParameterList "outp" outputList storeOutputs $ 
     dialogSetResponseSensitive window ResponseAccept True
   
   -- body widgets
@@ -167,24 +182,52 @@ showNodeCLWindow krn usedNames = do
   newkrn <- case resp of
     ResponseAccept -> do
       newBody <- get sbuff textBufferText
-      newName <- get eName entryText
+      newName <- get eName entryText      
+      
+      unless (validName newName usedNames) $
+        errorMsg (Just . toWindow $ window) "Invalid Kernel Name. Using old one."
+        
+      ins <- fmap init $ listStoreToList storeInputs
+      outs <- fmap init $ listStoreToList storeOutputs      
+      let paramNames = map fst $ ins ++ outs
+          dups = duplicates paramNames
+          validParams = (null dups) && all (`validName` []) paramNames
+          inPoints = map (\(n,t) -> IOPoint n (read t) InputPoint) ins
+          outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
+          newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
+      
+      unless validParams $ 
+        errorMsg (Just . toWindow $ window) "Invalid Parameters Names. Using old ones."
+        
       return krn { body = newBody, 
                    name = if validName newName usedNames
                           then newName 
-                          else name krn 
+                          else name krn,
+                   iopoints = if validParams
+                              then newPoints
+                              else iopoints krn
                  }
   
     _ -> return krn
     
   widgetDestroy window
   return newkrn
+    where 
+      errorMsg parent msg = do
+        msgDlg <- messageDialogNew parent [DialogModal] MessageError ButtonsOk msg
+        widgetShowAll msgDlg
+        _ <- dialogRun msgDlg
+        widgetDestroy msgDlg
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-setupParameterList :: TreeView -> ListStore (String,String) -> IO () -> IO ()
-setupParameterList list store applyChanged = do
+setupParameterList :: String -> TreeView -> ListStore (String,String) -> IO () -> IO ()
+setupParameterList newpre list store applyChanged = do
   treeViewSetModel list store
   treeViewSetHeadersVisible list True
+  
+  _ <- listStoreAppend store ("*new*","float")
   
   col1 <- treeViewColumnNew
   renderer1 <- cellRendererTextNew
@@ -193,14 +236,15 @@ setupParameterList list store applyChanged = do
   cellLayoutSetAttributes col1 renderer1 store $ \(r,_) -> [ 
     cellText := r, cellTextEditable := True ]
   _ <- treeViewAppendColumn list col1
-  _ <- renderer1 `on` edited $ \ns str -> do
-    when (not . null $ ns) $ do
-      let n = head ns
+  _ <- renderer1 `on` edited $ \path str -> do
+    when (not . null $ path) $ do
+      let n = head path
       (val1,val2) <- listStoreGetValue store n
       when (val1 /= str) $ do
         listStoreSetValue store n (str,val2)
         applyChanged
-  
+  _ <- renderer1 `on` editingStarted $ newParameter newpre
+       
   clTypes <- listStoreNew openclTypeNames
   let clColumn = makeColumnIdString 0
   customStoreSetColumn clTypes clColumn id
@@ -222,6 +266,7 @@ setupParameterList list store applyChanged = do
       when (val2 /= str) $ do
         listStoreSetValue store n (val1,str)
         applyChanged
+  _ <- renderer2 `on` editingStarted $ newParameter newpre
         
   col3 <- treeViewColumnNew
   renderer3 <- cellRendererToggleNew
@@ -230,10 +275,24 @@ setupParameterList list store applyChanged = do
   _ <- treeViewAppendColumn list col3
   _ <- renderer3 `on` cellToggled $ \path -> do
     npars <- listStoreGetSize store
-    when (npars > 1) $ do
-      print path
+    when (npars > 2) $ do
+      let treepath = stringToTreePath path
+      when (not . null $ treepath) $ do
+        let idx = head treepath
+        when (idx /= (npars - 1)) $ do
+          listStoreRemove store idx
+          applyChanged
   
   return ()
+    where
+      newParameter prefix _ path = do
+        when (not . null $ path) $ do
+          npars <- listStoreGetSize store
+          let idx = head path
+          when (idx == (npars - 1)) $ do
+            listStoreSetValue store idx (prefix,"float")
+            _ <- listStoreAppend store ("*new*","float")
+            applyChanged
 \end{code}
 
 \begin{code}
