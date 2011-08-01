@@ -17,7 +17,6 @@
 \begin{code}
 import Control.Concurrent.MVar( newMVar )
 import Data.Version( showVersion )
-import qualified Data.IntMap as M( fromList )
 import Graphics.UI.Gtk
     ( mainQuit, initGUI, mainGUI, onDestroy, castToWindow, widgetShowAll )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
@@ -27,34 +26,8 @@ import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain, getText )
 import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..), emptySkemaState )
-import Skema.Editor.Types( Pos2D(..) )
-import Skema.Types( IOPointType(..), IOPointDataType(..) )
-import Skema.SkemaDoc
-    ( SkemaDoc(..), Kernel(..), Node(..), IOPoint(..), NodeArrow(..)
-    , emptySkemaDoc, emptyKernel )
+import Skema.SkemaDoc( emptySkemaDoc )
 import Skema.Editor.MainWindow( prepareMainWindow )
-\end{code}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
-testDoc :: SkemaDoc
-testDoc = emptySkemaDoc {
-            library = M.fromList [(0,k1),(1,k2)]
-          , nodes = M.fromList [(0,NodeKernel (Pos2D (150,20)) 0),(1,NodeKernel (Pos2D (50,110)) 0)]
-          , arrows = [NodeArrow 1 2 0 1] }
-    where
-      k1 = emptyKernel {
-             name = "Adder" 
-           , body = "int id = get_global_id(0);\nz[id] = x[id] + y[id];"
-           , iopoints = M.fromList [(0,IOPoint "x" IOfloat InputPoint),
-                                    (1,IOPoint "y" IOfloat InputPoint),
-                                    (2,IOPoint "z" IOfloat OutputPoint)] }
-      k2 = emptyKernel {
-             name = "Scaler" 
-           , body = "int id = get_global_id(0);\nx2[id] = 2*input[id];\nx3[id] = 3*input[id];"
-           , iopoints = M.fromList [(0,IOPoint "input" IOint InputPoint),
-                                    (1,IOPoint "x2" IOfloat OutputPoint),
-                                    (2,IOPoint "x3" IOfloat OutputPoint)] }
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,7 +73,7 @@ launch = do
   window <- xmlGetWidget xml castToWindow "main"
   _ <- onDestroy window mainQuit
  
-  state <- newMVar $ emptySkemaState { skemaDoc = testDoc }
+  state <- newMVar $ emptySkemaState { skemaDoc = emptySkemaDoc }
 
   prepareMainWindow xml state      
   
