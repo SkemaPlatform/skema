@@ -275,6 +275,16 @@ nodeName skdoc node = maybe "*noname*" name maybeKernel
 \end{code}
 
 \begin{code}
+skemaDocDeleteNode :: SkemaDoc -> Int -> SkemaDoc
+skemaDocDeleteNode skdoc idx = skdoc { 
+  nodes = MI.delete idx $ nodes skdoc,
+  arrows = filter checkArrow $ arrows skdoc
+  }
+  where
+    checkArrow arr = (outputNode arr /= idx) && (inputNode arr /= idx)
+\end{code}
+
+\begin{code}
 nodeIOPoints :: SkemaDoc -> Node -> [IOPoint]
 nodeIOPoints skdoc node = maybe [] (MI.elems.iopoints) maybeKernel
     where

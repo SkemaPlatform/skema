@@ -22,13 +22,14 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 \begin{code}
 import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( MVar, readMVar, modifyMVar_, withMVar )
+import Control.Concurrent.MVar( 
+  MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
 import qualified Data.IntMap as M( adjust, keys, insert, assocs, elems )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
   on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize,
-  DrawWindow, DrawingArea )
+  DrawWindow, DrawingArea, widgetShowAll )
 import Graphics.UI.Gtk.Abstract.Widget( 
   widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent, 
   motionNotifyEvent, widgetQueueDraw, EventMask(..) )
@@ -46,6 +47,11 @@ import Graphics.UI.Gtk.ModelView(
   treeModelGetIter )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
   castToToolButton, onToolButtonClicked )
+import Graphics.UI.Gtk.MenuComboToolbar.MenuItem( 
+  menuItemNewWithLabel, menuItemActivate )
+import Graphics.UI.Gtk.MenuComboToolbar.MenuShell( menuShellAppend )
+import Graphics.UI.Gtk.MenuComboToolbar.Menu(
+  menuNew, menuPopup, menuSetTitle )
 import Skema.Editor.SkemaState( 
   SkemaState(..), XS(..), io, runXS, statePutSelectedPos, statePutSelectedPos2, 
   statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement, 
@@ -57,7 +63,7 @@ import Skema.SkemaDoc(
   SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), IOPoint(..), 
   nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, deleteArrow, 
   minimalKernel, skemaDocInsertKernel, skemaDocDeleteKernel, 
-  skemaDocUpdateKernel )
+  skemaDocUpdateKernel, skemaDocDeleteNode )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -78,18 +84,18 @@ prepareMainWindow xml state = do
   treeViewExpandAll ktree
 
   _ <- canvas `on` exposeEvent $ tryEvent $ do
-         eventCanvas <- eventWindow
-         liftIO . modifyMVar_ state $ \sks -> do
-           (_,new_sks) <- runXS sks $ drawCanvas eventCanvas
-           return new_sks
+    eventCanvas <- eventWindow
+    liftIO . modifyMVar_ state $ \sks -> do
+      (_,new_sks) <- runXS sks $ drawCanvas eventCanvas
+      return new_sks
 
   _ <- canvas `on` buttonPressEvent $ tryEvent $ do
-         LeftButton <- eventButton
-         SingleClick <- eventClick
-         (mx,my) <- eventCoordinates
-         liftIO . modifyMVar_ state $ \sks -> do
-           (_,new_sks) <- runXS sks $ selectElement mx my
-           return new_sks
+    LeftButton <- eventButton
+    SingleClick <- eventClick
+    (mx,my) <- eventCoordinates
+    liftIO . modifyMVar_ state $ \sks -> do
+      (_,new_sks) <- runXS sks $ selectElement mx my
+      return new_sks
 
   _ <- canvas `on` buttonPressEvent $ tryEvent $ do
     RightButton <- eventButton
@@ -97,10 +103,27 @@ prepareMainWindow xml state = do
     (mx,my) <- eventCoordinates
     (path, _) <- liftIO $ treeViewGetCursor ktree
     iter <- liftIO $ treeModelGetIter storeKernels path
-    when (isJust iter) . liftIO . modifyMVar_ state $ \sks -> do
+    when (isJust iter) . liftIO $ do 
+      maybeNode <- modifyMVar state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
-        (_,new_sks) <- runXS sks $ insertElement i mx my canvas
-        return new_sks
+        (node,new_sks) <- runXS sks $ insertElement i mx my canvas
+        return (new_sks,node)
+
+      when (isJust maybeNode) . liftIO $ do
+        let nodeIdx = fromJust maybeNode
+        menu <- menuNew
+        menuSetTitle menu "Node Menu"
+        item1 <- menuItemNewWithLabel "Delete"
+        menuShellAppend menu item1
+        menuPopup menu Nothing
+        
+        _ <- item1 `on` menuItemActivate $ do
+          modifyMVar_ state $ \sks -> do
+            (_,new_sks) <- runXS sks $ deleteNode nodeIdx
+            return new_sks
+          widgetQueueDraw canvas
+
+        widgetShowAll menu        
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
          LeftButton <- eventButton
@@ -229,12 +252,16 @@ selectElement mx my = do
 \end{code}
 
 \begin{code}
-insertElement :: Int -> Double -> Double -> DrawingArea -> XS ()
+insertElement :: Int -> Double -> Double -> DrawingArea -> XS (Maybe Int)
 insertElement idx mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
-  when (isNothing selElement) $ do
-    insertNewNode idx mx my
-    io $ widgetQueueDraw canvas
+  if (isNothing selElement) 
+    then do
+      insertNewNode idx mx my
+      io $ widgetQueueDraw canvas
+      return Nothing
+    else do
+      showElementMenu (fromJust selElement)
 \end{code}
 
 \begin{code}
@@ -246,6 +273,12 @@ insertNewNode idx x y = do
       new_node = NodeKernel (Pos2D (x,y)) idx
   statePutSkemaDoc $ oldDoc { 
                          nodes = M.insert last_i new_node $ nodes oldDoc}
+\end{code}
+
+\begin{code}
+showElementMenu :: SelectedElement -> XS (Maybe Int)
+showElementMenu (SeNODE k) = return $ Just k
+showElementMenu _ = return Nothing
 \end{code}
 
 \begin{code}
@@ -333,6 +366,14 @@ updateKernel :: Int -> Kernel -> XS ()
 updateKernel idx krn = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+deleteNode :: Int -> XS ()
+deleteNode idx = do
+  oldDoc <- stateGet skemaDoc
+  statePutSkemaDoc $ skemaDocDeleteNode oldDoc idx
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
