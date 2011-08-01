@@ -128,6 +128,11 @@ isInputPoint = (==InputPoint) . iopType
 \end{code}
 
 \begin{code}
+isOutputPoint :: IOPoint -> Bool
+isOutputPoint = (==OutputPoint) . iopType
+\end{code}
+
+\begin{code}
 data Kernel = Kernel
     { name :: String 
     , body :: String
