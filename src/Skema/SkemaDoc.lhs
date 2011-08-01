@@ -23,23 +23,22 @@ import Data.Maybe( fromJust, isJust, mapMaybe )
 import Data.List( partition, find )
 import Control.Monad( msum, liftM )
 import Control.Arrow( (&&&), second )
-import qualified Data.IntMap as MI
-    ( IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, filter )
+import qualified Data.IntMap as MI( 
+  IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, filter )
 import qualified Data.Map as M( fromList )
-import Skema.Editor.Types
-    ( Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
-import Skema.Types
-  ( IOPointType(..), IOPointDataType(..) )
-import Skema.ProgramFlow
-    ( ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..)
-    , emptyProgramFlow )
+import Skema.Editor.Types( 
+  Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
+import Skema.Types( IOPointType(..), IOPointDataType(..), isSameBaseType )
+import Skema.ProgramFlow( 
+  ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..), 
+  emptyProgramFlow )
 \end{code}
 
 \begin{code}
 data Node = NodeKernel
     { position :: !Pos2D
     , kernelIdx :: !Int }
-            deriving( Show )
+          deriving( Show )
 \end{code}
 
 \begin{code}
@@ -329,6 +328,15 @@ arrowIOPointType skdoc nidx ioidx = do
 \end{code}
 
 \begin{code}
+arrowIOPointDataType :: SkemaDoc -> Int -> Int -> Maybe IOPointDataType
+arrowIOPointDataType skdoc nidx ioidx = do
+  node <- MI.lookup nidx (nodes skdoc)
+  kernel <- MI.lookup (kernelIdx node) (library skdoc)
+  iop <- MI.lookup ioidx (iopoints kernel)
+  return $ iopDataType iop
+\end{code}
+
+\begin{code}
 insertValidArrow :: SkemaDoc -> NodeArrow -> SkemaDoc
 insertValidArrow skdoc narrow = skdoc { arrows = narrow : oldArrows }
     where
@@ -372,7 +380,8 @@ validArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Bool
 validArrow skdoc ki ji kf jf 
     | ki == kf = False
     | (not . null) samepoints = False
-    | isJust initType && isJust finalType = fromJust initType /= fromJust finalType
+    | not sameBase = False
+    | not sameType = False
     | (not . null) samearrows = False
     | otherwise = True
     where
@@ -380,6 +389,14 @@ validArrow skdoc ki ji kf jf
       samearrows = filter (isSameArrow ki ji kf jf) (arrows skdoc)
       initType = arrowIOPointType skdoc ki ji
       finalType = arrowIOPointType skdoc kf jf
+      initDataType = arrowIOPointDataType skdoc ki ji
+      finalDataType = arrowIOPointDataType skdoc kf jf
+      sameBase = isJust initDataType 
+                 && isJust finalDataType 
+                 && isSameBaseType (fromJust initDataType) (fromJust finalDataType)
+      sameType = isJust initType 
+                 && isJust finalType 
+                 && fromJust initType /= fromJust finalType
 \end{code}
 
 \begin{code}
