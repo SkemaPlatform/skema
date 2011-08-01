@@ -256,13 +256,15 @@ skemaDocUpdateKernel :: SkemaDoc -> Int -> Kernel -> SkemaDoc
 skemaDocUpdateKernel skdoc idx krn = maybe skdoc changeOldKernel maybeOldKrn
   where
     maybeOldKrn = MI.lookup idx $ library skdoc
+    affectedNodes = map fst . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
     changeOldKernel oldKrn = skdoc {
       library = MI.insert idx krn (MI.delete idx $ library skdoc),
       arrows = if (iopoints oldKrn) /= (iopoints krn) 
                then filter checkArrow $ arrows skdoc 
                else arrows skdoc
       }
-    checkArrow arr = (outputNode arr /= idx) && (inputNode arr /= idx)
+    checkArrow arr = (outputNode arr `notElem` affectedNodes) 
+                     && (inputNode arr `notElem` affectedNodes)
 \end{code}
 
 \begin{code}
