@@ -21,14 +21,21 @@ module Skema.Editor.PFPreviewWindow( showPFPreviewWindow ) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Control.Monad.Trans( liftIO )
+import Control.Monad( unless, forM_ )
 import Control.Concurrent.MVar( MVar, readMVar )
-import Graphics.UI.Gtk( on, widgetDestroy )
+import Graphics.UI.Gtk( on, widgetDestroy, toWindow, stockCancel, stockSave )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
-import Graphics.UI.Gtk.Windows.Dialog
-    ( ResponseId(..), castToDialog, dialogRun, dialogResponse )
+import Graphics.UI.Gtk.Windows.Dialog( 
+  ResponseId(..), castToDialog, dialogRun, dialogResponse )
 import Graphics.UI.Gtk.Multiline.TextView( castToTextView, textViewGetBuffer )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText )
 import Graphics.UI.Gtk.Buttons.Button( castToButton, buttonActivated )
+import Graphics.UI.Gtk.Selectors.FileFilter( 
+  fileFilterNew, fileFilterAddPattern, fileFilterSetName )
+import Graphics.UI.Gtk.Selectors.FileChooser( 
+  FileChooserAction(..), fileChooserSetDoOverwriteConfirmation, 
+  fileChooserGetFilename, fileChooserAddFilter )
+import Graphics.UI.Gtk.Selectors.FileChooserDialog( fileChooserDialogNew )
 import Paths_skema( getDataFileName )
 import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.SkemaDoc( extractProgramFlow )
@@ -51,15 +58,40 @@ showPFPreviewWindow state = do
   tbuffer <- textViewGetBuffer tv
   textBufferSetText tbuffer json
 
-  btn <- xmlGetWidget xml castToButton "button_accept"
-
-  _ <- btn `on` buttonActivated $ do
-         dialogResponse window ResponseAccept
-         widgetDestroy window
+  btnAccept <- xmlGetWidget xml castToButton "button_accept"
+  _ <- btnAccept `on` buttonActivated $ dialogResponse window ResponseNone
   
-  _ <- dialogRun window 
+  btnSave <- xmlGetWidget xml castToButton "button_save"
+  _ <- btnSave `on` buttonActivated $ do
+    dialogResponse window ResponseApply
+    chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
+               FileChooserActionSave 
+               [(stockCancel,ResponseNo),(stockSave,ResponseYes)]
+    forM_ [("Skema Program Flow","*.skm"), ("All","*.*")] 
+               $ \(n,f) -> do
+      fileFilter <- fileFilterNew
+      fileFilterAddPattern fileFilter f
+      fileFilterSetName fileFilter $ concat [n," (",f,")"]
+      fileChooserAddFilter chooser fileFilter
+    
+    fileChooserSetDoOverwriteConfirmation chooser True
+    _ <- dialogRun chooser
+    
+    fileName <- fileChooserGetFilename chooser
+    print fileName
+    
+    widgetDestroy chooser
+    
+  loop window
+
+  widgetDestroy window
 
   return ()
+  
+    where
+      loop window = do
+        resp <- dialogRun window 
+        unless (resp == ResponseNone) $ loop window
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
