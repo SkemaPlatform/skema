@@ -514,13 +514,13 @@ toPFIOPoint p = PFIOPoint (iopDataType p) (iopType p)
 \begin{code}
 toPFArrow :: SkemaDoc -> NodeArrow -> Maybe PFArrow
 toPFArrow skdoc arrow = do
-  let (SDNodeID nidxO) = outputNode arrow
-      (SDNodeID nidxI) = inputNode arrow
-  nodeO <- MI.lookup nidxO (nodes skdoc)
-  nodeI <- MI.lookup nidxI (nodes skdoc)
+  let nidxO = outputNode arrow
+      nidxI = inputNode arrow
+  nodeO <- sidMapLookup nidxO (nodes skdoc)
+  nodeI <- sidMapLookup nidxI (nodes skdoc)
   kernelO <- sidMapLookup (kernelIdx nodeO) (library skdoc) 
   kernelI <- sidMapLookup (kernelIdx nodeI) (library skdoc) 
   pointO <- MI.lookup (outputPoint arrow) (iopoints kernelO)
   pointI <- MI.lookup (inputPoint arrow) (iopoints kernelI)
-  return $ PFArrow (nidxO, iopName pointO) (nidxI, iopName pointI)
+  return $ PFArrow (fromSID nidxO, iopName pointO) (fromSID nidxI, iopName pointI)
 \end{code}
