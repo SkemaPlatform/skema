@@ -15,7 +15,19 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-module Skema.SkemaDoc where
+module Skema.SkemaDoc( 
+  -- Types
+  SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), SelectedElement(..), 
+  IOPoint(..), 
+  -- Functions
+  nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight,
+  nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition,
+  nodeIOPPosition, nodeKernel, findInputArrow, deleteArrow,
+  selectNodeElement, insertNewArrow, emptySkemaDoc, extractProgramFlow, 
+  isOutputPoint, isIOPoint, isInputPoint, nodeTranslate, skemaDocInsertKernel,
+  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, minimalKernel,
+  arrowIOPointType
+  ) where
 \end{code}
 
 \begin{code}
@@ -95,11 +107,6 @@ nodeOutputPosition node idx = Pos2D (px,py)
 \begin{code}
 nodeHeadHeight :: Node -> Double
 nodeHeadHeight = const 12
-\end{code}
-
-\begin{code}
-nodeMoveTo :: Pos2D -> Node -> Node
-nodeMoveTo npos node = node { position = npos }
 \end{code}
 
 \begin{code}
@@ -312,11 +319,6 @@ sortedIndex iop idx xs = liftM fst $ find findfun $ zip [0..] sames
     where 
       findfun = (==idx).fst.snd
       sames = filter (\(_,b)-> iopType b == iopType iop) xs
-\end{code}
-
-\begin{code}
-selectedPosition :: SkemaDoc -> SelectedElement -> Pos2D
-selectedPosition _ _ = Pos2D (0,0)
 \end{code}
 
 \begin{code}
