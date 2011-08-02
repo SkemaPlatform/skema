@@ -35,7 +35,7 @@ module Skema.SkemaDoc(
 import Data.Maybe( fromJust, isJust, mapMaybe )
 import Data.List( partition, find )
 import Control.Monad( msum, liftM )
-import Control.Arrow( (&&&), second, first )
+import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
   IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, filter )
 import qualified Data.Map as M( fromList )
@@ -46,10 +46,20 @@ import Skema.ProgramFlow(
   ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..), 
   emptyProgramFlow )
 import Skema.Util( isAcyclicGraph )
+import Skema.SIDMap( 
+  SID(..), SIDMap, sidMapAssocs, sidMapFromList, sidMapLookup )
 \end{code}
 
 \begin{code}
 newtype SDKernelID = SDKernelID Int deriving( Show, Eq )
+instance SID SDKernelID where
+  toInt (SDKernelID a) = a
+  fromInt = SDKernelID
+  
+newtype SDNodeID = SDNodeID Int deriving( Show, Eq )
+instance SID SDNodeID where
+  toInt (SDNodeID a) = a
+  fromInt = SDNodeID  
 \end{code}
 
 \begin{code}
@@ -158,7 +168,7 @@ emptyKernel = Kernel "" "" MI.empty
 \end{code}
 
 \begin{code}
-minimalKernel :: MI.IntMap Kernel -> Kernel
+minimalKernel :: SIDMap Kernel -> Kernel
 minimalKernel kns = emptyKernel { 
   name=newName,
   iopoints=MI.fromList $ zip [0..] 
@@ -231,8 +241,8 @@ data NodeArrow = NodeArrow
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 data SkemaDoc = SkemaDoc 
-    { library :: MI.IntMap Kernel
-    , nodes :: MI.IntMap Node 
+    { library :: SIDMap Kernel
+    , nodes :: SIDMap Node 
     , arrows :: [NodeArrow] }
     deriving( Show )
 \end{code}
@@ -245,18 +255,17 @@ emptySkemaDoc = SkemaDoc MI.empty MI.empty []
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 skemaDocGetKernelsAssocs :: SkemaDoc -> [(SDKernelID,Kernel)]
-skemaDocGetKernelsAssocs = skemaIDMapAssocs . library
+skemaDocGetKernelsAssocs = sidMapAssocs . library
 \end{code}
 
 \begin{code}
 skemaDocGetNodesAssocs :: SkemaDoc -> [(SDNodeID,Node)]
-skemaDocGetNodesAssocs = map (first SDNodeID) . MI.assocs . nodes
+skemaDocGetNodesAssocs = sidMapAssocs . nodes
 \end{code}
 
 \begin{code}
 skemaDocSetNodesAssocs :: SkemaDoc -> [(SDNodeID,Node)] -> SkemaDoc
-skemaDocSetNodesAssocs skdoc ns = skdoc { 
-  nodes = MI.fromList . map (first (\(SDNodeID i) -> i)) $ ns }
+skemaDocSetNodesAssocs skdoc ns = skdoc { nodes = sidMapFromList ns }
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,7 +299,7 @@ skemaDocUpdateKernel skdoc idx@(SDKernelID i) krn = maybe skdoc changeOldKernel 
     affectedNodes = map (SDNodeID . fst) . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
     changeOldKernel oldKrn = skdoc {
       library = MI.insert i krn (MI.delete i $ library skdoc),
-      arrows = if (iopoints oldKrn) /= (iopoints krn) 
+      arrows = if iopoints oldKrn /= iopoints krn
                then filter checkArrow $ arrows skdoc 
                else arrows skdoc
       }
@@ -320,8 +329,7 @@ skemaDocDeleteNode skdoc idx@(SDNodeID i) = skdoc {
 nodeIOPoints :: SkemaDoc -> Node -> [IOPoint]
 nodeIOPoints skdoc node = maybe [] (MI.elems.iopoints) maybeKernel
   where
-    SDKernelID idx = kernelIdx node
-    maybeKernel = MI.lookup idx (library skdoc) 
+    maybeKernel = sidMapLookup (kernelIdx node) (library skdoc) 
 \end{code}
 
 \begin{code}
@@ -336,9 +344,7 @@ nodeOutputPoints skdoc = filter (not.isInputPoint) . nodeIOPoints skdoc
 
 \begin{code}
 nodeKernel :: SkemaDoc -> Node -> Maybe Kernel
-nodeKernel skdoc node = MI.lookup idx (library skdoc) 
-  where
-    SDKernelID idx = kernelIdx node
+nodeKernel skdoc node = sidMapLookup (kernelIdx node) $ library skdoc
 \end{code}
 
 \begin{code}
@@ -350,11 +356,18 @@ sortedIndex iop idx xs = liftM fst $ find findfun $ zip [0..] sames
 \end{code}
 
 \begin{code}
+lookupIOPoint :: SkemaDoc -> SDNodeID -> Int -> Maybe IOPoint
+lookupIOPoint skdoc nidx ioidx = do
+  node <- sidMapLookup nidx (nodes skdoc)
+  kernel <- sidMapLookup (kernelIdx node) (library skdoc)
+  MI.lookup ioidx (iopoints kernel)
+\end{code}
+
+\begin{code}
 arrowPosition :: SkemaDoc -> SDNodeID -> Int -> Maybe Pos2D
-arrowPosition skdoc (SDNodeID nidx) ioidx = do
-  node <- MI.lookup nidx (nodes skdoc)
-  let SDKernelID kidx = kernelIdx node
-  kernel <- MI.lookup kidx (library skdoc)
+arrowPosition skdoc nidx ioidx = do
+  node <- sidMapLookup nidx (nodes skdoc)
+  kernel <- sidMapLookup (kernelIdx node) (library skdoc)
   iop <- MI.lookup ioidx (iopoints kernel)
   iopPos <- sortedIndex iop ioidx (MI.assocs.iopoints $ kernel)
   return $ nodeIOPPosition node iop iopPos
@@ -362,22 +375,14 @@ arrowPosition skdoc (SDNodeID nidx) ioidx = do
 
 \begin{code}
 arrowIOPointType :: SkemaDoc -> SDNodeID -> Int -> Maybe IOPointType
-arrowIOPointType skdoc (SDNodeID nidx) ioidx = do
-  node <- MI.lookup nidx (nodes skdoc)
-  let SDKernelID kidx = kernelIdx node
-  kernel <- MI.lookup kidx (library skdoc)
-  iop <- MI.lookup ioidx (iopoints kernel)
-  return $ iopType iop
+arrowIOPointType skdoc nidx ioidx = fmap iopType 
+                                    $ lookupIOPoint skdoc nidx ioidx
 \end{code}
 
 \begin{code}
 arrowIOPointDataType :: SkemaDoc -> SDNodeID -> Int -> Maybe IOPointDataType
-arrowIOPointDataType skdoc (SDNodeID nidx) ioidx = do
-  node <- MI.lookup nidx (nodes skdoc)
-  let SDKernelID kidx = kernelIdx node
-  kernel <- MI.lookup kidx (library skdoc)
-  iop <- MI.lookup ioidx (iopoints kernel)
-  return $ iopDataType iop
+arrowIOPointDataType skdoc nidx ioidx = fmap iopDataType 
+                                        $ lookupIOPoint skdoc nidx ioidx
 \end{code}
 
 \begin{code}
@@ -497,8 +502,7 @@ toPFKernel kernel = PFKernel (body kernel) kios
 \begin{code}
 toPFNode :: MI.IntMap Kernel -> Node -> Maybe PFNode
 toPFNode kernels node = do
-  let (SDKernelID kidx) = kernelIdx node
-  kernel <- MI.lookup kidx kernels
+  kernel <- sidMapLookup (kernelIdx node) kernels
   Just $ PFNode (name kernel)
 \end{code}
 
@@ -514,10 +518,8 @@ toPFArrow skdoc arrow = do
       (SDNodeID nidxI) = inputNode arrow
   nodeO <- MI.lookup nidxO (nodes skdoc)
   nodeI <- MI.lookup nidxI (nodes skdoc)
-  let (SDKernelID kidxO) = kernelIdx nodeO
-      (SDKernelID kidxI) = kernelIdx nodeI
-  kernelO <- MI.lookup kidxO (library skdoc) 
-  kernelI <- MI.lookup kidxI (library skdoc) 
+  kernelO <- sidMapLookup (kernelIdx nodeO) (library skdoc) 
+  kernelI <- sidMapLookup (kernelIdx nodeI) (library skdoc) 
   pointO <- MI.lookup (outputPoint arrow) (iopoints kernelO)
   pointI <- MI.lookup (inputPoint arrow) (iopoints kernelI)
   return $ PFArrow (nidxO, iopName pointO) (nidxI, iopName pointI)
