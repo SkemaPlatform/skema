@@ -23,6 +23,12 @@ module Properties( main ) where
 \begin{code}
 import Test.QuickCheck( Arbitrary(..), quickCheck, arbitrarySizedIntegral )
 import Text.Printf( printf )
+import Skema()
+import Skema.SkemaDoc()
+import Skema.Editor.Util()
+import Skema.Editor.MainWindow()
+import Skema.Editor.NodeCLWindow()
+import Skema.Editor.PFPreviewWindow()
 import Skema.Editor.Types( Pos2D, Circle(..), inside, posx, posy )
 \end{code}
 
