@@ -24,7 +24,7 @@ import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
-import qualified Data.IntMap as M( adjust, keys, insert, elems )
+import qualified Data.IntMap as M( keys, insert, elems )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
@@ -60,10 +60,11 @@ import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc( 
-  SDKernelID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
+  SDKernelID, SDNodeID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
   IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, 
   deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel, 
-  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode )
+  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, 
+  skemaDocGetNodesAssocs, skemaDocSetNodesAssocs )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -247,7 +248,8 @@ selectElement mx my = do
 \end{code}
 
 \begin{code}
-insertElement :: SDKernelID -> Double -> Double -> DrawingArea -> XS (Maybe Int)
+insertElement :: SDKernelID -> Double -> Double -> DrawingArea 
+                 -> XS (Maybe SDNodeID)
 insertElement idx mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
   if (isNothing selElement) 
@@ -271,7 +273,7 @@ insertNewNode idx x y = do
 \end{code}
 
 \begin{code}
-showElementMenu :: SelectedElement -> XS (Maybe Int)
+showElementMenu :: SelectedElement -> XS (Maybe SDNodeID)
 showElementMenu (SeNODE k) = return $ Just k
 showElementMenu _ = return Nothing
 \end{code}
@@ -291,9 +293,10 @@ moveSelectedElement mpos (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
   ori <- stateGet selectedPos
   let diff = mpos - ori
-      new_nodes = M.adjust (nodeTranslate diff) k (nodes oldDoc)
+      applyf (nk,n) = if nk == k then (nk,nodeTranslate diff n) else (nk,n)
+      new_nodes = map applyf . skemaDocGetNodesAssocs $ oldDoc
 
-  statePutSkemaDoc $ oldDoc { nodes = new_nodes }
+  statePutSkemaDoc $ skemaDocSetNodesAssocs oldDoc new_nodes
   statePutSelectedPos mpos
 moveSelectedElement mpos (SeIOP _ _) = statePutSelectedPos2 mpos
 \end{code}
@@ -365,7 +368,7 @@ updateKernel idx krn = do
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-deleteNode :: Int -> XS ()
+deleteNode :: SDNodeID -> XS ()
 deleteNode idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteNode oldDoc idx

@@ -17,7 +17,7 @@
 \begin{code}
 module Skema.SkemaDoc( 
   -- Types
-  SDKernelID, SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), 
+  SDKernelID, SDNodeID, SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), 
   SelectedElement(..), IOPoint(..), 
   -- Functions
   nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight,
@@ -26,7 +26,8 @@ module Skema.SkemaDoc(
   selectNodeElement, insertNewArrow, emptySkemaDoc, extractProgramFlow, 
   isOutputPoint, isIOPoint, isInputPoint, nodeTranslate, skemaDocInsertKernel,
   skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, minimalKernel,
-  arrowIOPointType, skemaDocGetKernelsAssocs
+  arrowIOPointType, skemaDocGetKernelsAssocs, skemaDocGetNodesAssocs, 
+  skemaDocSetNodesAssocs
   ) where
 \end{code}
 
@@ -170,8 +171,8 @@ minimalKernel kns = emptyKernel {
 \end{code}
 
 \begin{code}
-data SelectedElement = SeNODE !Int
-                     | SeIOP { seIOPNode :: !Int
+data SelectedElement = SeNODE ! SDNodeID
+                     | SeIOP { seIOPNode :: ! SDNodeID
                              , seIOPPoint :: !Int }
                        deriving( Show, Eq )
 \end{code}
@@ -183,7 +184,7 @@ isIOPoint _ = False
 \end{code}
 
 \begin{code}
-selectNodeElement :: Pos2D -> (Int,Node,Maybe Kernel) -> Maybe SelectedElement
+selectNodeElement :: Pos2D -> (SDNodeID,Node,Maybe Kernel) -> Maybe SelectedElement
 selectNodeElement (Pos2D (mx,my)) (k,node,maybeKernel)
     | isFullSelected && isJust pointSelected = Just $ SeIOP k (fromJust pointSelected)
     | isFullSelected && isBodySelected = Just $ SeNODE k
@@ -220,9 +221,9 @@ selectPoint mx my node (idx,(j,point))
 
 \begin{code}
 data NodeArrow = NodeArrow 
-    { outputNode :: !Int 
+    { outputNode :: ! SDNodeID
     , outputPoint :: !Int
-    , inputNode :: !Int
+    , inputNode :: ! SDNodeID
     , inputPoint :: !Int }
     deriving( Eq, Show )
 \end{code}
@@ -244,7 +245,18 @@ emptySkemaDoc = SkemaDoc MI.empty MI.empty []
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 skemaDocGetKernelsAssocs :: SkemaDoc -> [(SDKernelID,Kernel)]
-skemaDocGetKernelsAssocs = map (first SDKernelID) . MI.assocs . library
+skemaDocGetKernelsAssocs = skemaIDMapAssocs . library
+\end{code}
+
+\begin{code}
+skemaDocGetNodesAssocs :: SkemaDoc -> [(SDNodeID,Node)]
+skemaDocGetNodesAssocs = map (first SDNodeID) . MI.assocs . nodes
+\end{code}
+
+\begin{code}
+skemaDocSetNodesAssocs :: SkemaDoc -> [(SDNodeID,Node)] -> SkemaDoc
+skemaDocSetNodesAssocs skdoc ns = skdoc { 
+  nodes = MI.fromList . map (first (\(SDNodeID i) -> i)) $ ns }
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -265,7 +277,7 @@ skemaDocDeleteKernel skdoc idx@(SDKernelID i) = skdoc {
   arrows = filter checkArrow $ arrows skdoc
   }
   where
-    deletedNodes = map fst . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
+    deletedNodes = map (SDNodeID . fst) . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
     checkArrow arr = (outputNode arr `notElem` deletedNodes)
                      && (inputNode arr `notElem` deletedNodes)
 \end{code}
@@ -275,7 +287,7 @@ skemaDocUpdateKernel :: SkemaDoc -> SDKernelID -> Kernel -> SkemaDoc
 skemaDocUpdateKernel skdoc idx@(SDKernelID i) krn = maybe skdoc changeOldKernel maybeOldKrn
   where
     maybeOldKrn = MI.lookup i $ library skdoc
-    affectedNodes = map fst . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
+    affectedNodes = map (SDNodeID . fst) . filter ((==idx) . kernelIdx . snd) . MI.assocs $ nodes skdoc
     changeOldKernel oldKrn = skdoc {
       library = MI.insert i krn (MI.delete i $ library skdoc),
       arrows = if (iopoints oldKrn) /= (iopoints krn) 
@@ -295,9 +307,9 @@ nodeName skdoc node = maybe "*noname*" name maybeKernel
 \end{code}
 
 \begin{code}
-skemaDocDeleteNode :: SkemaDoc -> Int -> SkemaDoc
-skemaDocDeleteNode skdoc idx = skdoc { 
-  nodes = MI.delete idx $ nodes skdoc,
+skemaDocDeleteNode :: SkemaDoc -> SDNodeID -> SkemaDoc
+skemaDocDeleteNode skdoc idx@(SDNodeID i) = skdoc { 
+  nodes = MI.delete i $ nodes skdoc,
   arrows = filter checkArrow $ arrows skdoc
   }
   where
@@ -338,8 +350,8 @@ sortedIndex iop idx xs = liftM fst $ find findfun $ zip [0..] sames
 \end{code}
 
 \begin{code}
-arrowPosition :: SkemaDoc -> Int -> Int -> Maybe Pos2D
-arrowPosition skdoc nidx ioidx = do
+arrowPosition :: SkemaDoc -> SDNodeID -> Int -> Maybe Pos2D
+arrowPosition skdoc (SDNodeID nidx) ioidx = do
   node <- MI.lookup nidx (nodes skdoc)
   let SDKernelID kidx = kernelIdx node
   kernel <- MI.lookup kidx (library skdoc)
@@ -349,8 +361,8 @@ arrowPosition skdoc nidx ioidx = do
 \end{code}
 
 \begin{code}
-arrowIOPointType :: SkemaDoc -> Int -> Int -> Maybe IOPointType
-arrowIOPointType skdoc nidx ioidx = do
+arrowIOPointType :: SkemaDoc -> SDNodeID -> Int -> Maybe IOPointType
+arrowIOPointType skdoc (SDNodeID nidx) ioidx = do
   node <- MI.lookup nidx (nodes skdoc)
   let SDKernelID kidx = kernelIdx node
   kernel <- MI.lookup kidx (library skdoc)
@@ -359,8 +371,8 @@ arrowIOPointType skdoc nidx ioidx = do
 \end{code}
 
 \begin{code}
-arrowIOPointDataType :: SkemaDoc -> Int -> Int -> Maybe IOPointDataType
-arrowIOPointDataType skdoc nidx ioidx = do
+arrowIOPointDataType :: SkemaDoc -> SDNodeID -> Int -> Maybe IOPointDataType
+arrowIOPointDataType skdoc (SDNodeID nidx) ioidx = do
   node <- MI.lookup nidx (nodes skdoc)
   let SDKernelID kidx = kernelIdx node
   kernel <- MI.lookup kidx (library skdoc)
@@ -376,7 +388,7 @@ insertValidArrow skdoc narrow = skdoc { arrows = narrow : oldArrows }
 \end{code}
 
 \begin{code}
-insertNewArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> SkemaDoc
+insertNewArrow :: SkemaDoc -> SDNodeID -> Int -> SDNodeID -> Int -> SkemaDoc
 insertNewArrow skdoc ki ji kf jf 
     | validArrow skdoc ki ji kf jf = maybe skdoc (insertValidArrow skdoc) narrow
     | otherwise = skdoc
@@ -385,7 +397,7 @@ insertNewArrow skdoc ki ji kf jf
 \end{code}
 
 \begin{code}
-isSameArrow :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
+isSameArrow :: SDNodeID -> Int -> SDNodeID -> Int -> NodeArrow -> Bool
 isSameArrow pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint) 
     | (inode==pn0) && (ipoint==pp0) && (enode==pn1) && (epoint==pp1) = True
     | (inode==pn1) && (ipoint==pp1) && (enode==pn0) && (epoint==pp0) = True
@@ -393,7 +405,7 @@ isSameArrow pn0 pp0 pn1 pp1 (NodeArrow inode ipoint enode epoint)
 \end{code}
 
 \begin{code}
-isSameArrowPoint :: Int -> Int -> Int -> Int -> NodeArrow -> Bool
+isSameArrowPoint :: SDNodeID -> Int -> SDNodeID -> Int -> NodeArrow -> Bool
 isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow _ _ enode epoint)
     | (enode==pn0) && (epoint==pp0) = True
     | (enode==pn1) && (epoint==pp1) = True
@@ -401,14 +413,14 @@ isSameArrowPoint pn0 pp0 pn1 pp1 (NodeArrow _ _ enode epoint)
 \end{code}
 
 \begin{code}
-hasInputArrowPoint :: Int -> Int -> NodeArrow -> Bool
+hasInputArrowPoint :: SDNodeID -> Int -> NodeArrow -> Bool
 hasInputArrowPoint pn pp (NodeArrow _ _ enode epoint)
     | (enode==pn) && (epoint==pp) = True
     | otherwise = False
 \end{code}
 
 \begin{code}
-validArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Bool
+validArrow :: SkemaDoc -> SDNodeID -> Int -> SDNodeID -> Int -> Bool
 validArrow skdoc ki ji kf jf 
     | ki == kf = False
     | (not . null) samepoints = False
@@ -432,7 +444,7 @@ validArrow skdoc ki ji kf jf
 \end{code}
 
 \begin{code}
-createArrow :: SkemaDoc -> Int -> Int -> Int -> Int -> Maybe NodeArrow
+createArrow :: SkemaDoc -> SDNodeID -> Int -> SDNodeID -> Int -> Maybe NodeArrow
 createArrow skdoc ki ji kf jf = do
   point1 <- arrowIOPointType skdoc ki ji
   point2 <- arrowIOPointType skdoc kf jf
@@ -447,7 +459,7 @@ sortArrow _ initial _ end = (end,initial)
 \end{code}
 
 \begin{code}
-findInputArrow :: SkemaDoc -> Int -> Int -> Maybe NodeArrow
+findInputArrow :: SkemaDoc -> SDNodeID -> Int -> Maybe NodeArrow
 findInputArrow skdoc nidx ioidx = if (not.null) samearrows
                                then Just $ head samearrows
                                else Nothing
@@ -498,13 +510,15 @@ toPFIOPoint p = PFIOPoint (iopDataType p) (iopType p)
 \begin{code}
 toPFArrow :: SkemaDoc -> NodeArrow -> Maybe PFArrow
 toPFArrow skdoc arrow = do
-  nodeO <- MI.lookup (outputNode arrow) (nodes skdoc)
-  nodeI <- MI.lookup (inputNode arrow) (nodes skdoc)
+  let (SDNodeID nidxO) = outputNode arrow
+      (SDNodeID nidxI) = inputNode arrow
+  nodeO <- MI.lookup nidxO (nodes skdoc)
+  nodeI <- MI.lookup nidxI (nodes skdoc)
   let (SDKernelID kidxO) = kernelIdx nodeO
       (SDKernelID kidxI) = kernelIdx nodeI
   kernelO <- MI.lookup kidxO (library skdoc) 
   kernelI <- MI.lookup kidxI (library skdoc) 
   pointO <- MI.lookup (outputPoint arrow) (iopoints kernelO)
   pointI <- MI.lookup (inputPoint arrow) (iopoints kernelI)
-  return $ PFArrow (outputNode arrow, iopName pointO) (inputNode arrow, iopName pointI)
+  return $ PFArrow (nidxO, iopName pointO) (nidxI, iopName pointI)
 \end{code}

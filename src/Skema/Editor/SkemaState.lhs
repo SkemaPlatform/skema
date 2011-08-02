@@ -27,12 +27,11 @@ module Skema.Editor.SkemaState(
 import Control.Monad( when, liftM, msum )
 import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
-import qualified Data.IntMap as M( assocs )
 import System.IO( hPutStrLn, stderr )
 import Skema.Editor.Types( Pos2D(..) )
 import Skema.SkemaDoc( 
-  SDKernelID, SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement, 
-  insertNewArrow, emptySkemaDoc )
+  SDKernelID, SDNodeID, SkemaDoc(..), SelectedElement(..), nodeKernel, 
+  selectNodeElement, insertNewArrow, emptySkemaDoc, skemaDocGetNodesAssocs )
 \end{code}
 
 \begin{code}
@@ -107,11 +106,11 @@ stateGet f = liftM f get
 stateSelectElement :: Pos2D -> XS (Maybe SelectedElement)
 stateSelectElement pos = do
   stDoc <- stateGet skemaDoc
-  return $ msum . map (selectNodeElement pos . \(i,n) -> (i,n,nodeKernel stDoc n)) . M.assocs.nodes $ stDoc
+  return $ msum . map (selectNodeElement pos . \(i,n) -> (i,n,nodeKernel stDoc n)) . skemaDocGetNodesAssocs $ stDoc
 \end{code}
 
 \begin{code}
-stateInsertNewArrow :: Int -> Int -> Int -> Int -> XS ()
+stateInsertNewArrow :: SDNodeID -> Int -> SDNodeID -> Int -> XS ()
 stateInsertNewArrow ki ji kf jf = do
   stDoc <- stateGet skemaDoc
   statePutSkemaDoc $ insertNewArrow stDoc ki ji kf jf
