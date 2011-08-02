@@ -28,11 +28,11 @@ import qualified Graphics.Rendering.Cairo as Cr
     , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo
     , selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo
     , setDash )
-import Skema.SkemaDoc
-    ( SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, SelectedElement(..), nodePosx
-    , nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight
-    , nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition
-    , nodeIOPPosition, isInputPoint, iopName, iopDataType )
+import Skema.SkemaDoc( 
+  SDKernelID, SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, 
+  SelectedElement(..), nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, 
+  nodeHeadHeight, nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, 
+  arrowPosition, nodeIOPPosition, isInputPoint, iopName, iopDataType )
 import Skema.Math( deg2rad )
 import Skema.Editor.Types( Pos2D(..), RGBColor, posx, posy )
 import Skema.Editor.Util
@@ -58,7 +58,7 @@ instance ElemColor IOPoint where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-drawSkemaDoc :: Double -> Double -> SkemaDoc -> Maybe Int -> Cr.Render ()
+drawSkemaDoc :: Double -> Double -> SkemaDoc -> Maybe SDKernelID -> Cr.Render ()
 drawSkemaDoc _ _ skdoc sel = do
   Cr.setSourceRGB 0.45 0.45 0.45
   Cr.paint

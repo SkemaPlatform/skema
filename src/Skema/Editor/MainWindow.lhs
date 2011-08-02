@@ -24,7 +24,7 @@ import Control.Monad( when )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
-import qualified Data.IntMap as M( adjust, keys, insert, assocs, elems )
+import qualified Data.IntMap as M( adjust, keys, insert, elems )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
@@ -60,10 +60,10 @@ import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc( 
-  SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), IOPoint(..), 
-  nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, deleteArrow, 
-  minimalKernel, skemaDocInsertKernel, skemaDocDeleteKernel, 
-  skemaDocUpdateKernel, skemaDocDeleteNode )
+  SDKernelID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
+  IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, 
+  deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel, 
+  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -79,7 +79,7 @@ prepareMainWindow xml state = do
   skdoc <- fmap skemaDoc $ readMVar state
 
   ktree <- xmlGetWidget xml castToTreeView "kernels_tree"
-  storeKernels <- listStoreNew (extractKernelsTree skdoc)
+  storeKernels <- listStoreNew (skemaDocGetKernelsAssocs skdoc)
   setupKernelsView ktree storeKernels
   treeViewExpandAll ktree
 
@@ -190,7 +190,7 @@ prepareMainWindow xml state = do
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-setupKernelsView :: TreeView -> ListStore (Int,Kernel) -> IO ()
+setupKernelsView :: TreeView -> ListStore (SDKernelID,Kernel) -> IO ()
 setupKernelsView view model = do
   treeViewSetModel view model
   treeViewSetHeadersVisible view True
@@ -222,15 +222,10 @@ setupKernelsView view model = do
 \end{code}
 
 \begin{code}
-extractKernelsTree :: SkemaDoc -> [(Int,Kernel)]
-extractKernelsTree = M.assocs . library
-\end{code}
-
-\begin{code}
-clearKernelList :: ListStore (Int,Kernel) -> SkemaState -> IO SkemaState
+clearKernelList :: ListStore (SDKernelID,Kernel) -> SkemaState -> IO SkemaState
 clearKernelList list sks = do
   listStoreClear list
-  mapM_ (listStoreAppend list) (extractKernelsTree $ skemaDoc sks)
+  mapM_ (listStoreAppend list) (skemaDocGetKernelsAssocs $ skemaDoc sks)
   return sks{ selectedKernel = Nothing }
 \end{code}
 
@@ -252,7 +247,7 @@ selectElement mx my = do
 \end{code}
 
 \begin{code}
-insertElement :: Int -> Double -> Double -> DrawingArea -> XS (Maybe Int)
+insertElement :: SDKernelID -> Double -> Double -> DrawingArea -> XS (Maybe Int)
 insertElement idx mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
   if (isNothing selElement) 
@@ -265,7 +260,7 @@ insertElement idx mx my canvas = do
 \end{code}
 
 \begin{code}
-insertNewNode :: Int -> Double -> Double -> XS ()
+insertNewNode :: SDKernelID -> Double -> Double -> XS ()
 insertNewNode idx x y = do
   oldDoc <- stateGet skemaDoc
   let keys = M.keys.nodes $ oldDoc
@@ -355,14 +350,14 @@ newKernel = do
 \end{code}
 
 \begin{code}
-deleteKernel :: Int -> XS ()
+deleteKernel :: SDKernelID -> XS ()
 deleteKernel idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteKernel oldDoc idx
 \end{code}
 
 \begin{code}
-updateKernel :: Int -> Kernel -> XS ()
+updateKernel :: SDKernelID -> Kernel -> XS ()
 updateKernel idx krn = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn

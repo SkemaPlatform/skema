@@ -31,7 +31,7 @@ import qualified Data.IntMap as M( assocs )
 import System.IO( hPutStrLn, stderr )
 import Skema.Editor.Types( Pos2D(..) )
 import Skema.SkemaDoc( 
-  SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement, 
+  SDKernelID, SkemaDoc(..), SelectedElement(..), nodeKernel, selectNodeElement, 
   insertNewArrow, emptySkemaDoc )
 \end{code}
 
@@ -42,7 +42,7 @@ data SkemaState = SkemaState
     , selectedPos :: !Pos2D -- ^ last selected position
     , selectedPos2 :: !Pos2D -- ^ additional selected position
     , selectedElem :: Maybe SelectedElement -- ^ current selected element 
-    , selectedKernel :: Maybe Int -- ^ current selected kernel
+    , selectedKernel :: Maybe SDKernelID -- ^ current selected kernel
     }
 \end{code}
 
