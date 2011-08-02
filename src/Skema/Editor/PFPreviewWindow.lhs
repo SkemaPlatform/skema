@@ -20,8 +20,9 @@ module Skema.Editor.PFPreviewWindow( showPFPreviewWindow ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+import Data.Maybe( isJust, fromJust )
 import Control.Monad.Trans( liftIO )
-import Control.Monad( unless, forM_ )
+import Control.Monad( when, unless, forM_ )
 import Control.Concurrent.MVar( MVar, readMVar )
 import Graphics.UI.Gtk( on, widgetDestroy, toWindow, stockCancel, stockSave )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
@@ -78,9 +79,10 @@ showPFPreviewWindow state = do
     _ <- dialogRun chooser
     
     fileName <- fileChooserGetFilename chooser
-    print fileName
     
     widgetDestroy chooser
+    
+    when (isJust fileName) $ writeFile (fromJust fileName) json
     
   loop window
 
