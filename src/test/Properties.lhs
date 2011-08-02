@@ -23,7 +23,7 @@ module Properties( main ) where
 \begin{code}
 import Test.QuickCheck( Arbitrary(..), quickCheck, arbitrarySizedIntegral )
 import Text.Printf( printf )
-import Skema.Editor.Types( Pos2D )
+import Skema.Editor.Types( Pos2D, Circle(..), inside, posx, posy )
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,11 +52,21 @@ prop_pos2d_sum pa pb  = pa + pb == pb + pa
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Skema.Editor.Types
+
+\begin{code}
+prop_inside_circle_center :: Pos2D -> Double -> Bool
+prop_inside_circle_center pc rad = rad <= 0 
+                                   || inside (posx pc) (posy pc) (Circle pc rad) 
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 tests :: [(String, IO ())]
 tests = [
   ("Skema.Util: pos2D signum", quickCheck prop_pos2d_signum),
-  ("Skema.Util: pos2D sum", quickCheck prop_pos2d_sum)
+  ("Skema.Util: pos2D sum", quickCheck prop_pos2d_sum),
+  ("Skema.Editor.Types: Area Circle center", quickCheck prop_inside_circle_center)
  ]
 \end{code}
 
