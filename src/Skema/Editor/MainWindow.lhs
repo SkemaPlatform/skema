@@ -150,6 +150,11 @@ prepareMainWindow xml state = do
         return $ sks { selectedKernel = Just i }
     widgetQueueDraw canvas
          
+  _ <- ktree `on` buttonPressEvent $ tryEvent $ do
+    LeftButton <- eventButton
+    DoubleClick <- eventClick
+    liftIO $ editKernel canvas state ktree storeKernels
+    
   btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
   
@@ -161,20 +166,9 @@ prepareMainWindow xml state = do
     widgetQueueDraw canvas    
   
   btn_edit_kernel <- xmlGetWidget xml castToToolButton "ktb_edit"
-  _ <- onToolButtonClicked btn_edit_kernel $ do
-    (path, _) <- treeViewGetCursor ktree
-    iter <- treeModelGetIter storeKernels path
-    when (isJust iter) $ do
-      (i,k) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
-      usedNames <- withMVar state 
-                   $ return . filter (/= name k) . map name . M.elems . library . skemaDoc
-      newk <- showNodeCLWindow k usedNames
-      when (newk /= k) $ do 
-        modifyMVar_ state $ \sks -> do
-          (_,new_sks) <- runXS sks $ updateKernel i newk
-          clearKernelList storeKernels new_sks
-        widgetQueueDraw canvas
-    
+  _ <- onToolButtonClicked btn_edit_kernel 
+       $ editKernel canvas state ktree storeKernels
+  
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
     (path, _) <- treeViewGetCursor ktree
@@ -187,6 +181,24 @@ prepareMainWindow xml state = do
       widgetQueueDraw canvas
     
   return ()
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+editKernel :: DrawingArea -> MVar SkemaState -> TreeView -> ListStore (SDKernelID, Kernel) -> IO ()
+editKernel canvas state tree kernels = do
+  (path, _) <- treeViewGetCursor tree
+  iter <- treeModelGetIter kernels path
+  when (isJust iter) $ do
+    (i,k) <- listStoreGetValue kernels (listStoreIterToIndex . fromJust $ iter)
+    usedNames <- withMVar state 
+                 $ return . filter (/= name k) . map name . M.elems . library . skemaDoc
+    newk <- showNodeCLWindow k usedNames
+    when (newk /= k) $ do 
+      modifyMVar_ state $ \sks -> do
+        (_,new_sks) <- runXS sks $ updateKernel i newk
+        clearKernelList kernels new_sks
+      widgetQueueDraw canvas    
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
