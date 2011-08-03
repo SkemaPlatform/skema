@@ -173,7 +173,7 @@ showNodeCLWindow krn usedNames = do
       then widgetModifyBase eName eNameState goodColor
       else widgetModifyBase eName eNameState badColor
            
-  _ <- sbuff `on` bufferChanged $ do
+  _ <- sbuff `on` bufferChanged $
     dialogSetResponseSensitive window ResponseAccept True
     
   
@@ -191,7 +191,7 @@ showNodeCLWindow krn usedNames = do
       outs <- fmap init $ listStoreToList storeOutputs      
       let paramNames = map fst $ ins ++ outs
           dups = duplicates paramNames
-          validParams = (null dups) && all (`validName` []) paramNames
+          validParams = null dups && all (`validName` []) paramNames
           inPoints = map (\(n,t) -> IOPoint n (read t) InputPoint) ins
           outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
           newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
@@ -236,13 +236,12 @@ setupParameterList newpre list store applyChanged = do
   cellLayoutSetAttributes col1 renderer1 store $ \(r,_) -> [ 
     cellText := r, cellTextEditable := True ]
   _ <- treeViewAppendColumn list col1
-  _ <- renderer1 `on` edited $ \path str -> do
-    when (not . null $ path) $ do
-      let n = head path
-      (val1,val2) <- listStoreGetValue store n
-      when (val1 /= str) $ do
-        listStoreSetValue store n (str,val2)
-        applyChanged
+  _ <- renderer1 `on` edited $ \path str -> unless (null path) $ do
+    let n = head path
+    (val1,val2) <- listStoreGetValue store n
+    when (val1 /= str) $ do
+      listStoreSetValue store n (str,val2)
+      applyChanged
   _ <- renderer1 `on` editingStarted $ newParameter newpre
        
   clTypes <- listStoreNew openclTypeNames
@@ -259,13 +258,12 @@ setupParameterList newpre list store applyChanged = do
     cellComboHasEntry := False,
     cellTextEditable := True ]
   _ <- treeViewAppendColumn list col2
-  _ <- renderer2 `on` edited $ \ns str -> do
-    when (not . null $ ns) $ do
-      let n = head ns
-      (val1,val2) <- listStoreGetValue store n
-      when (val2 /= str) $ do
-        listStoreSetValue store n (val1,str)
-        applyChanged
+  _ <- renderer2 `on` edited $ \ns str -> unless (null ns) $ do
+    let n = head ns
+    (val1,val2) <- listStoreGetValue store n
+    when (val2 /= str) $ do
+      listStoreSetValue store n (val1,str)
+      applyChanged
   _ <- renderer2 `on` editingStarted $ newParameter newpre
         
   col3 <- treeViewColumnNew
@@ -277,7 +275,7 @@ setupParameterList newpre list store applyChanged = do
     npars <- listStoreGetSize store
     when (npars > 2) $ do
       let treepath = stringToTreePath path
-      when (not . null $ treepath) $ do
+      unless (null treepath) $ do
         let idx = head treepath
         when (idx /= (npars - 1)) $ do
           listStoreRemove store idx
@@ -285,14 +283,13 @@ setupParameterList newpre list store applyChanged = do
   
   return ()
     where
-      newParameter prefix _ path = do
-        when (not . null $ path) $ do
-          npars <- listStoreGetSize store
-          let idx = head path
-          when (idx == (npars - 1)) $ do
-            listStoreSetValue store idx (prefix,"float")
-            _ <- listStoreAppend store ("*new*","float")
-            applyChanged
+      newParameter prefix _ path = unless (null path) $ do
+        npars <- listStoreGetSize store
+        let idx = head path
+        when (idx == (npars - 1)) $ do
+          listStoreSetValue store idx (prefix,"float")
+          _ <- listStoreAppend store ("*new*","float")
+          applyChanged
 \end{code}
 
 \begin{code}
@@ -300,10 +297,10 @@ validName :: String -> [String] -> Bool
 validName cad xs = checkLength && checkDigits 
                    && (checkInit.head) cad && cad `notElem` xs
   where
-    checkLength = (length cad) > 0
+    checkLength = length cad > 0
     checkDigits = all checkChar cad
-    checkChar c = (isAlphaNum c) || (c == '_')
-    checkInit c = (isAlpha c) || (c == '_')
+    checkChar c = isAlphaNum c || (c == '_')
+    checkInit c = isAlpha c || (c == '_')
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

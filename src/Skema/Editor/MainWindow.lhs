@@ -264,13 +264,12 @@ insertElement :: SDKernelID -> Double -> Double -> DrawingArea
                  -> XS (Maybe SDNodeID)
 insertElement idx mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
-  if (isNothing selElement) 
+  if isNothing selElement
     then do
       insertNewNode idx mx my
       io $ widgetQueueDraw canvas
       return Nothing
-    else do
-      showElementMenu (fromJust selElement)
+    else showElementMenu (fromJust selElement)
 \end{code}
 
 \begin{code}
