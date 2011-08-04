@@ -170,6 +170,7 @@ emptyKernel = Kernel "" "" MI.empty
 \begin{code}
 minimalKernel :: SIDMap Kernel -> Kernel
 minimalKernel kns = emptyKernel { 
+  body="int id = get_global_id(0);\n",
   name=newName,
   iopoints=MI.fromList $ zip [0..] 
            [IOPoint "x" IOfloat InputPoint, 
