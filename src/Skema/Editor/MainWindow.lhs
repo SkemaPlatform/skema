@@ -36,15 +36,17 @@ import Graphics.UI.Gtk.Abstract.Widget(
 import Graphics.UI.Gtk.Gdk.EventM( 
   tryEvent, eventButton, eventClick, eventCoordinates, MouseButton(..), 
   Click(..) )
+import Graphics.UI.Gtk.Display.Statusbar( 
+  castToStatusbar, statusbarGetContextId, statusbarPush )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
 import Graphics.UI.Gtk.ModelView( 
   ListStore, listStoreNew, listStoreClear, listStoreAppend, listStoreGetValue, 
-  listStoreIterToIndex, TreeView, castToTreeView, treeViewSetHeadersVisible, 
-  treeViewAppendColumn, treeViewSetModel, cursorChanged, treeViewGetCursor, 
-  treeViewExpandAll, cellText, cellRendererTextNew, cellLayoutSetAttributes, 
-  treeViewColumnNew, treeViewColumnSetTitle, treeViewColumnPackStart, 
-  treeModelGetIter )
+  listStoreIterToIndex, TreeView, TreeIter, castToTreeView, 
+  treeViewSetHeadersVisible, treeViewAppendColumn, treeViewSetModel, 
+  cursorChanged, treeViewGetCursor, treeViewExpandAll, cellText, 
+  cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew, 
+  treeViewColumnSetTitle, treeViewColumnPackStart, treeModelGetIter )
 import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
   castToToolButton, onToolButtonClicked )
 import Graphics.UI.Gtk.MenuComboToolbar.MenuItem( 
@@ -84,6 +86,10 @@ prepareMainWindow xml state = do
   setupKernelsView ktree storeKernels
   treeViewExpandAll ktree
 
+  statusbar <- xmlGetWidget xml castToStatusbar "statusbar"
+  sbcontext <- statusbarGetContextId statusbar ""
+  _ <- statusbarPush statusbar sbcontext "info"
+
   _ <- canvas `on` exposeEvent $ tryEvent $ do
     eventCanvas <- eventWindow
     liftIO . modifyMVar_ state $ \sks -> do
@@ -102,8 +108,7 @@ prepareMainWindow xml state = do
     RightButton <- eventButton
     SingleClick <- eventClick
     (mx,my) <- eventCoordinates
-    (path, _) <- liftIO $ treeViewGetCursor ktree
-    iter <- liftIO $ treeModelGetIter storeKernels path
+    iter <- liftIO $ getTreeIter ktree storeKernels
     when (isJust iter) . liftIO $ do 
       maybeNode <- modifyMVar state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
@@ -141,8 +146,7 @@ prepareMainWindow xml state = do
            return new_sks
   
   _ <- ktree `on` cursorChanged $ do
-    (path, _) <- treeViewGetCursor ktree
-    iter <- treeModelGetIter storeKernels path
+    iter <- getTreeIter ktree storeKernels
     case iter of
       Nothing -> modifyMVar_ state $ \sks -> return $ sks { selectedKernel = Nothing }
       Just val -> modifyMVar_ state $ \sks -> do
@@ -171,8 +175,7 @@ prepareMainWindow xml state = do
   
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
-    (path, _) <- treeViewGetCursor ktree
-    iter <- treeModelGetIter storeKernels path
+    iter <- getTreeIter ktree storeKernels
     when (isJust iter) $ do 
       modifyMVar_ state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
@@ -185,10 +188,15 @@ prepareMainWindow xml state = do
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+getTreeIter :: TreeView -> ListStore a -> IO (Maybe TreeIter)
+getTreeIter tree store = (fmap fst $ treeViewGetCursor tree)
+    >>= treeModelGetIter store
+\end{code}
+
+\begin{code}
 editKernel :: DrawingArea -> MVar SkemaState -> TreeView -> ListStore (SDKernelID, Kernel) -> IO ()
 editKernel canvas state tree kernels = do
-  (path, _) <- treeViewGetCursor tree
-  iter <- treeModelGetIter kernels path
+  iter <- getTreeIter tree kernels
   when (isJust iter) $ do
     (i,k) <- listStoreGetValue kernels (listStoreIterToIndex . fromJust $ iter)
     usedNames <- withMVar state 
