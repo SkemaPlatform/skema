@@ -76,13 +76,14 @@ showPFPreviewWindow state = do
       fileChooserAddFilter chooser fileFilter
     
     fileChooserSetDoOverwriteConfirmation chooser True
-    _ <- dialogRun chooser
+    resp <- dialogRun chooser
     
     fileName <- fileChooserGetFilename chooser
     
     widgetDestroy chooser
     
-    when (isJust fileName) $ writeFile (fromJust fileName) json
+    when (resp == ResponseYes && isJust fileName) 
+      $ writeFile (fromJust fileName) json
     
   loop window
 
