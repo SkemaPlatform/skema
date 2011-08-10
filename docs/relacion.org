@@ -74,3 +74,6 @@ libgtksourceview2.0-dev
 
 * Apendice: Teoria
 ** Los Program Flows son DAG (Directed Acyclic Graphs)
+** http://en.wikipedia.org/wiki/Kahn_process_networks
+** http://neo4j.org/learn/  Graph Database
+** http://www.tinkerpop.com/ Tinker Pop Graph Stack
