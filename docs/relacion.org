@@ -13,14 +13,14 @@ para el estado en Gtk se usa MVar para compartir estado entre eventos y StateM p
 *** zipper estructura principal
 
 ** Casos de Uso
-- [ ] Insertar un nodo computación
-- [ ] Borrar un nodo de computación
+- [X] Insertar un nodo computación
+- [X] Borrar un nodo de computación
 - [X] Mover un nodo computación
 - [X] Juntar una salida de un nodo con una entrada de otro
-- [ ] Borrar una conexion
-- [ ] Mover una entrada
-- [ ] Mover una salida
-- [ ] Crear una nueva clase de nodo
+- [X] Borrar una conexion
+- [X] Mover una entrada
+- [X] Mover una salida
+- [X] Crear una nueva clase de nodo
 
 ** Diccionario de tipos
 *** Nodo de Computación
@@ -41,7 +41,10 @@ http://www.haskell.org/haskellwiki/How_to_write_a_Haskell_program
 *** http://en.wikipedia.org/wiki/Dataflow_programming
 *** Codigo fuente de leksah
 
-
+** Conclusiones
+   La seleccion de librerias ha sido muy buena, el conjunto de Cairo + GTK en el
+   editor no podia ser mejor. En el servidor se usa Happstack para implementar
+   los servicios web.
 
 * 2 Iteracion: Ejecucion de flujos
 
@@ -49,17 +52,34 @@ Programa completo capaz de ejecutar un flujo
 
 ** A realizar
 *** Servicio web que ejecute los flujos
-*** Llamar al servicio web desde el editor y desde programa
 *** Empezar a documentar más
+
+** Casos de Uso
+- [X] Exportar flujo a fichero
+- [X] Ejecutar flujo con datos simples
+
+** Dudas
+*** Probar Leksah para ver si se puede seguir desarrollando
+
+** Conclusiones
+   No se ha podido completar todos lo pasos deseados, pero lo principal que es
+   ejecutar un flujo completo se ha lelvado a cabo.
+
+* 3 Iteracion: Editar Constantes
+
+** A realizar
+*** Incluir constantes en los nodos de los kernels
+*** Llamar al servicio web desde el editor y desde programa
+*** Mejorar el codigo y la documentación
 
 ** Casos de Uso
 - [ ] Salvar proyecto
 - [ ] Cargar proyecto
-- [ ] Exportar flujo a fichero
-- [ ] Ejecutar flujo con datos simples
-
-** Dudas
-*** Probar Leksah para ver si se puede seguir desarrollando
+- [ ] Ejecutar el flujo desde el editor
+- [ ] Añadir constantes a un kernel
+- [ ] Dar valor a las constantes en el kernel
+- [ ] Dar valor a las constantes en el nodo
+- [ ] Dar valor a las constantes en la ejecucion
 
 * Apendice: Instalacion
 
@@ -77,3 +97,5 @@ libgtksourceview2.0-dev
 ** http://en.wikipedia.org/wiki/Kahn_process_networks
 ** http://neo4j.org/learn/  Graph Database
 ** http://www.tinkerpop.com/ Tinker Pop Graph Stack
+** http://www.mnbtech.com/index.php?id=106 hprcARCHITECT
+   proyecto similar de ejecucion de flujos en HPC
