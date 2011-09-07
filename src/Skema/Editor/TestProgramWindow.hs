@@ -21,6 +21,7 @@ import Graphics.UI.Gtk( widgetShowAll, widgetSetSizeRequest, widgetDestroy )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
+import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
 import Graphics.UI.Gtk.Windows.Dialog( 
   ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
 import Graphics.UI.Gtk.Windows.Window( windowSetDefault )
@@ -44,11 +45,15 @@ showTestProgramWindow = do
   hbox0 <- hBoxNew True 0
   sw_in <- scrolledWindowNew Nothing Nothing
   sw_out <- scrolledWindowNew Nothing Nothing
-  btn_run <- buttonNewFromStock stockExecute
-  sep1 <- hSeparatorNew
+  vbox0 <- vBoxNew True 0
   boxPackStart hbox0 sw_in PackGrow 0
---  boxPackStart hbox0 btn_run PackNatural 0
-  boxPackStart hbox0 sep1 PackNatural 0
+  sep1 <- hSeparatorNew
+  boxPackStart vbox0 sep1 PackGrow 0
+  btn_run <- buttonNewFromStock stockExecute
+  boxPackStart vbox0 btn_run PackNatural 0
+  sep2 <- hSeparatorNew
+  boxPackStart vbox0 sep2 PackGrow 0
+  boxPackStart hbox0 vbox0 PackNatural 0
   boxPackStart hbox0 sw_out PackGrow 0  
   boxPackStart internal hbox0 PackGrow 0  
   
