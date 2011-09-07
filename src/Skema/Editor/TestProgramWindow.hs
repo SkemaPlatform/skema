@@ -27,6 +27,7 @@ import Graphics.UI.Gtk.Windows.Window( windowSetDefault )
 import Graphics.UI.Gtk.Scrolling.ScrolledWindow( scrolledWindowNew )
 import Graphics.UI.Gtk.Buttons.Button( buttonNewFromStock )
 import Graphics.UI.Gtk.General.StockItems( stockExecute, stockOk )
+import Graphics.UI.Gtk.Ornaments.HSeparator
 
 -- -----------------------------------------------------------------------------
 showTestProgramWindow :: IO ()
@@ -44,8 +45,10 @@ showTestProgramWindow = do
   sw_in <- scrolledWindowNew Nothing Nothing
   sw_out <- scrolledWindowNew Nothing Nothing
   btn_run <- buttonNewFromStock stockExecute
+  sep1 <- hSeparatorNew
   boxPackStart hbox0 sw_in PackGrow 0
-  boxPackStart hbox0 btn_run PackNatural 0
+--  boxPackStart hbox0 btn_run PackNatural 0
+  boxPackStart hbox0 sep1 PackNatural 0
   boxPackStart hbox0 sw_out PackGrow 0  
   boxPackStart internal hbox0 PackGrow 0  
   
