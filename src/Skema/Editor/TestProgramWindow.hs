@@ -18,13 +18,40 @@ module Skema.Editor.TestProgramWindow( showTestProgramWindow ) where
 
 -- -----------------------------------------------------------------------------
 import Graphics.UI.Gtk( widgetShowAll, widgetSetSizeRequest, widgetDestroy )
-import Graphics.UI.Gtk.Windows.Dialog( dialogNew, dialogRun )
+import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
+import Graphics.UI.Gtk.Display.Label( labelNew )
+import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
+import Graphics.UI.Gtk.Windows.Dialog( 
+  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
+import Graphics.UI.Gtk.Windows.Window( windowSetDefault )
+import Graphics.UI.Gtk.Scrolling.ScrolledWindow( scrolledWindowNew )
+import Graphics.UI.Gtk.Buttons.Button( buttonNewFromStock )
+import Graphics.UI.Gtk.General.StockItems( stockExecute, stockOk )
 
 -- -----------------------------------------------------------------------------
 showTestProgramWindow :: IO ()
 showTestProgramWindow = do
   window <- dialogNew
   widgetSetSizeRequest window 640 480
+  
+  internal <- dialogGetUpper window
+  -- head
+  lblName <- labelNew $ Just "Test"
+  boxPackStart internal lblName PackNatural 0  
+  
+  -- body
+  hbox0 <- hBoxNew True 0
+  sw_in <- scrolledWindowNew Nothing Nothing
+  sw_out <- scrolledWindowNew Nothing Nothing
+  btn_run <- buttonNewFromStock stockExecute
+  boxPackStart hbox0 sw_in PackGrow 0
+  boxPackStart hbox0 btn_run PackNatural 0
+  boxPackStart hbox0 sw_out PackGrow 0  
+  boxPackStart internal hbox0 PackGrow 0  
+  
+  -- buttons
+  okButton <- dialogAddButton window stockOk ResponseAccept
+  windowSetDefault window $ Just okButton
   
   widgetShowAll window 
   
