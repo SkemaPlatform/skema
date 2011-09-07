@@ -141,6 +141,20 @@
                     <property name="homogeneous">True</property>
                   </packing>
                 </child>
+                <child>
+                  <widget class="GtkToolButton" id="mtb_pf_test">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="use_action_appearance">False</property>
+                    <property name="label" translatable="yes">Program Flow Test</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-execute</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="homogeneous">True</property>
+                  </packing>
+                </child>
               </widget>
             </child>
           </widget>
