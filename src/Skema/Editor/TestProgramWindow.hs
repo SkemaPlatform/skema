@@ -14,8 +14,22 @@
 -- You should have received a copy of the GNU General Public License
 -- along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 -- -----------------------------------------------------------------------------
-module Skema.Editor.TestProgramWindow( showNodeCLWindow ) where
+module Skema.Editor.TestProgramWindow( showTestProgramWindow ) where
 
+-- -----------------------------------------------------------------------------
+import Graphics.UI.Gtk( widgetShowAll, widgetSetSizeRequest, widgetDestroy )
+import Graphics.UI.Gtk.Windows.Dialog( dialogNew, dialogRun )
+
+-- -----------------------------------------------------------------------------
 showTestProgramWindow :: IO ()
 showTestProgramWindow = do
+  window <- dialogNew
+  widgetSetSizeRequest window 640 480
+  
+  widgetShowAll window 
+  
+  _ <- dialogRun window   
+  
+  widgetDestroy window
+  
   return ()
