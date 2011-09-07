@@ -67,7 +67,7 @@ import Skema.SkemaDoc(
   IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, 
   deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel, 
   skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, 
-  skemaDocGetNodesAssocs, skemaDocSetNodesAssocs )
+  skemaDocGetNodesAssocs, skemaDocSetNodesAssocs, extractProgramFlow )
 import Skema.Types( IOPointType(..) )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
@@ -164,7 +164,8 @@ prepareMainWindow xml state = do
   _ <- onToolButtonClicked btn_pfv $ showPFPreviewWindow state
   
   btn_pft <- xmlGetWidget xml castToToolButton "mtb_pf_test"
-  _ <- onToolButtonClicked btn_pft $ showTestProgramWindow
+  _ <- onToolButtonClicked btn_pft $ do
+    readMVar state >>= showTestProgramWindow . extractProgramFlow . skemaDoc
   
   btn_new_kernel <- xmlGetWidget xml castToToolButton "ktb_new"
   _ <- onToolButtonClicked btn_new_kernel $ do 
