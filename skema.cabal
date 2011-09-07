@@ -8,7 +8,7 @@ Author:        Luis Cabellos
 Maintainer:    cabellos@ifca.unican.es
 Build-Type:    Simple
 Data-Dir:      data
-Data-Files:    *.glade, *.skm, *.lang
+Data-Files:    *.glade, *.lang
 Extra-Source-Files: po/*.po po/*.pot
 
 x-gettext-po-files: po/*.po 
