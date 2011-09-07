@@ -60,6 +60,7 @@ import Skema.Editor.SkemaState(
   stateInsertNewArrow )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
+import Skema.Editor.TestProgramWindow( showTestProgramWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
 import Skema.SkemaDoc( 
   SDKernelID, SDNodeID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
@@ -159,8 +160,11 @@ prepareMainWindow xml state = do
     DoubleClick <- eventClick
     liftIO $ editKernel canvas state ktree storeKernels
     
-  btn_pf <- xmlGetWidget xml castToToolButton "mtb_pf_view"
-  _ <- onToolButtonClicked btn_pf $ showPFPreviewWindow state
+  btn_pfv <- xmlGetWidget xml castToToolButton "mtb_pf_view"
+  _ <- onToolButtonClicked btn_pfv $ showPFPreviewWindow state
+  
+  btn_pft <- xmlGetWidget xml castToToolButton "mtb_pf_test"
+  _ <- onToolButtonClicked btn_pft $ showTestProgramWindow
   
   btn_new_kernel <- xmlGetWidget xml castToToolButton "ktb_new"
   _ <- onToolButtonClicked btn_new_kernel $ do 
