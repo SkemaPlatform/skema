@@ -21,6 +21,7 @@ import Control.Monad( forM_, forM, when, liftM )
 import Control.Concurrent.MVar( MVar, newMVar, readMVar, modifyMVar_ )
 import Data.Int( Int8, Int16, Int32, Int64 )
 import Data.Word( Word8, Word16, Word32, Word64 )
+import Data.Maybe( isJust, fromJust )
 import Graphics.UI.Gtk( 
   widgetShowAll, widgetSetSizeRequest, widgetDestroy, widgetSetSensitivity )
 import Graphics.UI.Gtk.Abstract.Box( BoxClass, Packing(..), boxPackStart )
@@ -35,7 +36,8 @@ import Graphics.UI.Gtk.Scrolling.ScrolledWindow(
 import Graphics.UI.Gtk.Buttons.Button( buttonNewFromStock, buttonActivated )
 import Graphics.UI.Gtk.General.StockItems( stockExecute, stockOk )
 import Graphics.UI.Gtk.Entry.SpinButton( 
-  SpinButton, spinButtonNew, spinButtonGetValue, afterInput )
+  SpinButton, spinButtonNew, spinButtonGetValue, afterInput, 
+  spinButtonSetValue )
 import Graphics.UI.Gtk.Misc.Adjustment( adjustmentNew )
 import Graphics.UI.Gtk.Ornaments.HSeparator( hSeparatorNew )
 import System.Glib.Signals( on )
@@ -44,7 +46,10 @@ import Skema.Types(
 import Skema.ProgramFlow( 
   ProgramFlow, IOPoint(..), unasignedOutputPoints, unasignedInputPoints )
 import Skema.SIDMap( toInt )
-import Skema.DataValue( DataValue(..), updateDataValue )
+import Skema.DataValue( 
+  DataValue(..), updateDataValue, extractValue, valuesToByteString, 
+  convertToDataValues )
+import Skema.RunProtocol( ServerPort(..), runBuffers )
 
 -- -----------------------------------------------------------------------------
 showTestProgramWindow :: ProgramFlow -> IO ()
@@ -92,9 +97,19 @@ showTestProgramWindow pf = do
   windowSetDefault window $ Just okButton
   
   _ <- btn_run `on` buttonActivated $ do
-    forM_ invals $ \xs -> do
-      vals <- mapM readMVar xs
-      print vals
+    ins <- forM invals $ liftM valuesToByteString . mapM readMVar
+    outs <- runBuffers ins (ServerPort "tesla01.ifca.es" 8080) pf
+    when (isJust outs) 
+      (do
+          let dvals = map (uncurry convertToDataValues) 
+                      (zip 
+                       (fromJust outs)
+                       (map iopDataType $ unasignedOutputPoints pf))
+          forM_ (zip outents dvals) $ \(entries,vals) -> do
+            forM_ (zip entries vals) (uncurry putOnSpin)
+      )
+    print "test Ended"
+      
 
   widgetShowAll window 
   
@@ -103,6 +118,10 @@ showTestProgramWindow pf = do
   widgetDestroy window
   
   return ()
+
+-- -----------------------------------------------------------------------------
+putOnSpin :: SpinButton -> DataValue -> IO ()
+putOnSpin entry  = spinButtonSetValue entry . extractValue
 
 -- -----------------------------------------------------------------------------
 createIOControl :: BoxClass b => b -> IOPoint -> IO [(MVar DataValue,SpinButton)]
