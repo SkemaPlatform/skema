@@ -23,24 +23,26 @@ import Data.Int( Int8, Int16, Int32, Int64 )
 import Data.Word( Word8, Word16, Word32, Word64 )
 import Data.Maybe( isJust, fromJust )
 import Graphics.UI.Gtk( 
-  widgetShowAll, widgetSetSizeRequest, widgetDestroy, widgetSetSensitivity )
+  widgetShowAll, widgetDestroy, widgetSetSensitivity )
+import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Graphics.UI.Gtk.Abstract.Box( BoxClass, Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
 import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
 import Graphics.UI.Gtk.Windows.Dialog( 
-  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton )
+  ResponseId(..), castToDialog, dialogRun, dialogAddButton )
 import Graphics.UI.Gtk.Windows.Window( windowSetDefault )
 import Graphics.UI.Gtk.Scrolling.ScrolledWindow( 
-  scrolledWindowNew, scrolledWindowAddWithViewport )
-import Graphics.UI.Gtk.Buttons.Button( buttonNewFromStock, buttonActivated )
-import Graphics.UI.Gtk.General.StockItems( stockExecute, stockOk )
+  castToScrolledWindow, scrolledWindowAddWithViewport )
+import Graphics.UI.Gtk.Buttons.Button( castToButton, buttonActivated )
+import Graphics.UI.Gtk.General.StockItems( stockOk )
+import Graphics.UI.Gtk.Entry.Entry( entryNew )
 import Graphics.UI.Gtk.Entry.SpinButton( 
   SpinButton, spinButtonNew, spinButtonGetValue, afterInput, 
   spinButtonSetValue )
 import Graphics.UI.Gtk.Misc.Adjustment( adjustmentNew )
-import Graphics.UI.Gtk.Ornaments.HSeparator( hSeparatorNew )
 import System.Glib.Signals( on )
+import Paths_skema( getDataFileName )
 import Skema.Types( 
   IOPointDataType(..), IOPointType(..), dataTypeBase, dataTypeVectorSize )
 import Skema.ProgramFlow( 
@@ -56,46 +58,23 @@ showTestProgramWindow :: ProgramFlow -> IO ()
 showTestProgramWindow pf = do
   -- TODO: check program flow ins/outs
   
-  window <- dialogNew
-  widgetSetSizeRequest window 640 480
+  glade <- getDataFileName "pf_test.glade"
+  Just xml <- xmlNew glade
+  window <- xmlGetWidget xml castToDialog "main"
   
-  internal <- dialogGetUpper window
-  -- head
-  lblName <- labelNew $ Just "Test"
-  boxPackStart internal lblName PackNatural 0  
-  
-  -- body
-  hbox0 <- hBoxNew True 0
-  
-  sw_in <- scrolledWindowNew Nothing Nothing
+  sw_in <- xmlGetWidget xml castToScrolledWindow "sw_in"
   vbox_in <- vBoxNew True 0
   invals <- forM (unasignedInputPoints pf)
             (liftM (map fst) . createIOControl vbox_in)
   scrolledWindowAddWithViewport sw_in vbox_in  
-  boxPackStart hbox0 sw_in PackGrow 0
-  
-  vbox0 <- vBoxNew True 0
-  sep1 <- hSeparatorNew
-  boxPackStart vbox0 sep1 PackNatural 0
-  btn_run <- buttonNewFromStock stockExecute
-  boxPackStart vbox0 btn_run PackNatural 0
-  sep2 <- hSeparatorNew
-  boxPackStart vbox0 sep2 PackNatural 0
-  boxPackStart hbox0 vbox0 PackRepel 0
-  
-  sw_out <- scrolledWindowNew Nothing Nothing
+
+  sw_out <- xmlGetWidget xml castToScrolledWindow "sw_out"
   vbox_out <- vBoxNew True 0
   outents <- forM (unasignedOutputPoints pf) 
              (liftM (map snd) . createIOControl vbox_out)
   scrolledWindowAddWithViewport sw_out vbox_out  
-  boxPackStart hbox0 sw_out PackGrow 0 
   
-  boxPackStart internal hbox0 PackGrow 0  
-  
-  -- buttons
-  okButton <- dialogAddButton window stockOk ResponseAccept
-  windowSetDefault window $ Just okButton
-  
+  btn_run <- xmlGetWidget xml castToButton "btn_run"
   _ <- btn_run `on` buttonActivated $ do
     ins <- forM invals $ liftM valuesToByteString . mapM readMVar
     outs <- runBuffers ins (ServerPort "tesla01.ifca.es" 8080) pf
@@ -109,16 +88,17 @@ showTestProgramWindow pf = do
             forM_ (zip entries vals) (uncurry putOnSpin)
       )
     print "test Ended"
-      
-
+    
+  -- buttons
+  okButton <- dialogAddButton window stockOk ResponseAccept
+  windowSetDefault window $ Just okButton
+  
   widgetShowAll window 
-  
-  _ <- dialogRun window   
-  
+  _ <- dialogRun window 
   widgetDestroy window
   
   return ()
-
+  
 -- -----------------------------------------------------------------------------
 putOnSpin :: SpinButton -> DataValue -> IO ()
 putOnSpin entry  = spinButtonSetValue entry . extractValue
