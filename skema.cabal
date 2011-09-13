@@ -1,12 +1,14 @@
 Name:          skema
 Version:       0.4.0
-Cabal-Version: >=1.8
-Description:   Skema Platform Editor
+Synopsis:      Skema Platform Editor
+Description:   Skema Platform is a framework for distributed workflows executed on GPUs. This is the editor application for generate Skema Programs.
 License:       GPL
 License-file:  LICENSE
 Author:        Luis Cabellos
 Maintainer:    cabellos@ifca.unican.es
+Category:      Visual Programming, Workflow, Distributed Computing, GPU
 Build-Type:    Simple
+Cabal-Version: >=1.8
 Data-Dir:      data
 Data-Files:    *.glade, *.lang
 Extra-Source-Files: po/*.po po/*.pot
@@ -24,7 +26,7 @@ flag testing
 Library
   hs-source-dirs:  src
   ghc-options:     -Wall
-  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, skema-common==0.2.*
+  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, skema-common==0.2.*
   Exposed-modules: 
     Skema
     Skema.SkemaDoc
@@ -41,7 +43,7 @@ Executable skema
   ghc-options:     -Wall
   ghc-prof-options: -prof -auto-all
   Main-is:         skema_main.lhs
-  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*,skema-common==0.2.*, hgettext==0.1.*, setlocale==0.0.3
+  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*,skema-common==0.2.*, hgettext==0.1.*, setlocale==0.0.3
 
   if flag(coverage)
     ghc-options:   -fhpc
