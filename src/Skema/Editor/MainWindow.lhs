@@ -20,7 +20,7 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-import Control.Monad( when )
+import Control.Monad( when, forM_ )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
@@ -29,17 +29,25 @@ import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
   on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize,
-  DrawWindow, DrawingArea, widgetShowAll )
+  DrawWindow, DrawingArea, widgetShowAll, mainQuit )
 import Graphics.UI.Gtk.Abstract.Widget( 
   widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent, 
-  motionNotifyEvent, widgetQueueDraw, EventMask(..) )
+  motionNotifyEvent, widgetQueueDraw, EventMask(..), widgetDestroy )
+import Graphics.UI.Gtk.Display.Statusbar( 
+  castToStatusbar, statusbarGetContextId, statusbarPush )
 import Graphics.UI.Gtk.Gdk.EventM( 
   tryEvent, eventButton, eventClick, eventCoordinates, MouseButton(..), 
   Click(..) )
-import Graphics.UI.Gtk.Display.Statusbar( 
-  castToStatusbar, statusbarGetContextId, statusbarPush )
-import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
+import Graphics.UI.Gtk.General.StockItems( stockCancel, stockOpen, stockSave )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
+import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
+  castToToolButton, onToolButtonClicked )
+import Graphics.UI.Gtk.MenuComboToolbar.MenuItem( 
+  castToMenuItem, menuItemNewWithLabel, menuItemActivate )
+import Graphics.UI.Gtk.MenuComboToolbar.MenuShell( menuShellAppend )
+import Graphics.UI.Gtk.MenuComboToolbar.Menu(
+  menuNew, menuPopup, menuSetTitle )
+import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
 import Graphics.UI.Gtk.ModelView( 
   ListStore, listStoreNew, listStoreClear, listStoreAppend, listStoreGetValue, 
   listStoreIterToIndex, TreeView, TreeIter, castToTreeView, 
@@ -47,17 +55,18 @@ import Graphics.UI.Gtk.ModelView(
   cursorChanged, treeViewGetCursor, treeViewExpandAll, cellText, 
   cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew, 
   treeViewColumnSetTitle, treeViewColumnPackStart, treeModelGetIter )
-import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
-  castToToolButton, onToolButtonClicked )
-import Graphics.UI.Gtk.MenuComboToolbar.MenuItem( 
-  menuItemNewWithLabel, menuItemActivate )
-import Graphics.UI.Gtk.MenuComboToolbar.MenuShell( menuShellAppend )
-import Graphics.UI.Gtk.MenuComboToolbar.Menu(
-  menuNew, menuPopup, menuSetTitle )
+import Graphics.UI.Gtk.Selectors.FileFilter( 
+  fileFilterNew, fileFilterAddPattern, fileFilterSetName )
+import Graphics.UI.Gtk.Selectors.FileChooser( 
+  FileChooserAction(..), fileChooserSetDoOverwriteConfirmation, 
+  fileChooserGetFilename, fileChooserAddFilter )
+import Graphics.UI.Gtk.Selectors.FileChooserDialog( fileChooserDialogNew )
+import Graphics.UI.Gtk.Windows.Dialog( ResponseId(..), dialogRun )
+import Graphics.UI.Gtk.Windows.Window( Window, castToWindow, toWindow )
 import Skema.Editor.SkemaState( 
   SkemaState(..), XS(..), io, runXS, statePutSelectedPos, statePutSelectedPos2, 
   statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement, 
-  stateInsertNewArrow )
+  stateInsertNewArrow, statePutSkemaDocFilename )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.TestProgramWindow( showTestProgramWindow )
@@ -69,6 +78,7 @@ import Skema.SkemaDoc(
   skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, 
   skemaDocGetNodesAssocs, skemaDocSetNodesAssocs, extractProgramFlow )
 import Skema.Types( IOPointType(..) )
+import Skema.Util( toJSONString, fromJSONString )
 import Skema.Editor.Types( Pos2D(..) )
 \end{code}
 
@@ -187,6 +197,45 @@ prepareMainWindow xml state = do
         (_,new_sks) <- runXS sks $ deleteKernel i
         clearKernelList storeKernels new_sks
       widgetQueueDraw canvas
+    
+  window <- xmlGetWidget xml castToWindow "main"
+  
+  -- Menu Items
+  mi_open <- xmlGetWidget xml castToMenuItem "mi_open"
+  _ <- mi_open `on` menuItemActivate $ do
+    filename <- selectOpenFilename window
+    when (isJust filename) $ do
+      modifyMVar_ state $ \sks -> do
+        (ok, new_sks) <- runXS sks (openSkemaDoc $ fromJust filename) 
+        when ok (clearKernelList storeKernels new_sks >> return ())
+        return new_sks
+      widgetQueueDraw canvas
+      
+  mi_save <- xmlGetWidget xml castToMenuItem "mi_save"
+  _ <- mi_save `on` menuItemActivate $ do
+    oldname <- withMVar state $ \sks -> runXS sks (stateGet skemaDocFile) 
+                                         >>= return . fst
+    filename <- if isJust oldname
+                then return oldname
+                else selectSaveFilename window
+
+    when (isJust filename) $ do
+      modifyMVar_ state 
+        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename) 
+                  >>= return . snd
+  
+  mi_save_as <- xmlGetWidget xml castToMenuItem "mi_save_as"
+  _ <- mi_save_as `on` menuItemActivate $ do
+    filename <- selectSaveFilename window
+
+    when (isJust filename) $ do
+      modifyMVar_ state 
+        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename) 
+                  >>= return . snd
+  
+  mi_quit <- xmlGetWidget xml castToMenuItem "mi_quit"
+  _ <- mi_quit `on` menuItemActivate $ do
+    mainQuit
     
   return ()
 \end{code}
@@ -396,6 +445,79 @@ deleteNode :: SDNodeID -> XS ()
 deleteNode idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteNode oldDoc idx
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+selectOpenFilename :: Window -> IO (Maybe FilePath)
+selectOpenFilename window = do
+  chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
+             FileChooserActionOpen
+             [(stockCancel,ResponseNo),(stockOpen,ResponseYes)]
+  forM_ [("Skema Project","*.skema"), ("All","*.*")] $ \(n,f) -> do
+    fileFilter <- fileFilterNew
+    fileFilterAddPattern fileFilter f
+    fileFilterSetName fileFilter $ concat [n," (",f,")"]
+    fileChooserAddFilter chooser fileFilter
+    
+  resp <- dialogRun chooser
+  
+  fileName <- fileChooserGetFilename chooser
+    
+  widgetDestroy chooser
+    
+  case resp of
+    ResponseYes -> return fileName
+    _ -> return Nothing
+\end{code}
+
+\begin{code}
+selectSaveFilename :: Window -> IO (Maybe FilePath)
+selectSaveFilename window = do
+  chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
+             FileChooserActionSave
+             [(stockCancel,ResponseNo),(stockSave,ResponseYes)]
+  forM_ [("Skema Project","*.skema"), ("All","*.*")] $ \(n,f) -> do
+    fileFilter <- fileFilterNew
+    fileFilterAddPattern fileFilter f
+    fileFilterSetName fileFilter $ concat [n," (",f,")"]
+    fileChooserAddFilter chooser fileFilter
+    
+  fileChooserSetDoOverwriteConfirmation chooser True
+  resp <- dialogRun chooser
+  
+  fileName <- fileChooserGetFilename chooser
+    
+  widgetDestroy chooser
+    
+  case resp of
+    ResponseYes -> return fileName
+    _ -> return Nothing
+\end{code}
+
+\begin{code}
+openSkemaDoc :: FilePath -> XS Bool
+openSkemaDoc filename = do
+  filedat <- io $ catch 
+    (fmap Just $ readFile filename)
+    (\_ -> return Nothing)
+    
+  case filedat of
+    Nothing -> return False
+    Just json -> case fromJSONString json of
+      Nothing -> return False
+      Just doc -> do
+        statePutSkemaDoc doc 
+        statePutSkemaDocFilename $ Just filename
+        return True
+\end{code}
+
+\begin{code}
+saveSkemaDoc :: FilePath -> XS ()
+saveSkemaDoc filename = do
+  jsonData <- fmap toJSONString $ stateGet skemaDoc
+  io $ writeFile filename jsonData
+  statePutSkemaDocFilename $ Just filename  
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
