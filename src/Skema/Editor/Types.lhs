@@ -21,12 +21,35 @@ module Skema.Editor.Types
         where
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+import Control.Applicative( pure )
+import Control.Monad( mzero )
+import Data.String( fromString )
+import Data.Aeson( Value(..), ToJSON(..), FromJSON(..), (.=), (.:), object )
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 type RGBColor = (Double, Double, Double)
 \end{code}
 
 \begin{code}
 newtype Pos2D = Pos2D (Double,Double) deriving( Eq, Show )
+\end{code}
+
+\begin{code}
+instance ToJSON Pos2D where
+  toJSON (Pos2D (x,y)) = object [
+    fromString "x" .= x, fromString "y" .= y
+    ]                       
+
+instance FromJSON Pos2D where
+  parseJSON (Object v) = do
+    x <- v .: fromString "x"
+    y <- v .: fromString "y"
+    pure $ Pos2D (x,y)
+  parseJSON _ = mzero
 \end{code}
 
 \begin{code}
