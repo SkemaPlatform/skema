@@ -60,7 +60,8 @@ import Graphics.UI.Gtk.Selectors.FileFilter(
 import Graphics.UI.Gtk.Selectors.FileChooser( 
   FileChooserAction(..), fileChooserSetDoOverwriteConfirmation, 
   fileChooserGetFilename, fileChooserAddFilter )
-import Graphics.UI.Gtk.Selectors.FileChooserDialog( fileChooserDialogNew )
+import Graphics.UI.Gtk.Selectors.FileChooserDialog( 
+  FileChooserDialog, fileChooserDialogNew )
 import Graphics.UI.Gtk.Windows.Dialog( ResponseId(..), dialogRun )
 import Graphics.UI.Gtk.Windows.Window( Window, castToWindow, toWindow )
 import Skema.Editor.SkemaState( 
@@ -449,17 +450,24 @@ deleteNode idx = do
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+setupFilters :: FileChooserDialog -> IO ()
+setupFilters dialog = forM_ filters $ \(n,f) -> do
+  fileFilter <- fileFilterNew
+  fileFilterAddPattern fileFilter f
+  fileFilterSetName fileFilter $ concat [n," (",f,")"]
+  fileChooserAddFilter dialog fileFilter
+    where
+      filters = [("Skema Project","*.skema"), ("All","*.*")]
+
+\end{code}
+
+\begin{code}
 selectOpenFilename :: Window -> IO (Maybe FilePath)
 selectOpenFilename window = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
              FileChooserActionOpen
              [(stockCancel,ResponseNo),(stockOpen,ResponseYes)]
-  forM_ [("Skema Project","*.skema"), ("All","*.*")] $ \(n,f) -> do
-    fileFilter <- fileFilterNew
-    fileFilterAddPattern fileFilter f
-    fileFilterSetName fileFilter $ concat [n," (",f,")"]
-    fileChooserAddFilter chooser fileFilter
-    
+  setupFilters chooser
   resp <- dialogRun chooser
   
   fileName <- fileChooserGetFilename chooser
@@ -477,12 +485,7 @@ selectSaveFilename window = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
              FileChooserActionSave
              [(stockCancel,ResponseNo),(stockSave,ResponseYes)]
-  forM_ [("Skema Project","*.skema"), ("All","*.*")] $ \(n,f) -> do
-    fileFilter <- fileFilterNew
-    fileFilterAddPattern fileFilter f
-    fileFilterSetName fileFilter $ concat [n," (",f,")"]
-    fileChooserAddFilter chooser fileFilter
-    
+  setupFilters chooser
   fileChooserSetDoOverwriteConfirmation chooser True
   resp <- dialogRun chooser
   
