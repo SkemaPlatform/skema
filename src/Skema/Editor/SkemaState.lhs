@@ -19,7 +19,8 @@
 module Skema.Editor.SkemaState( 
   SkemaState(..), emptySkemaState, XS(..), io, runXS, get, put, trace, whenXS, 
   statePutSelectedPos, statePutSelectedPos2, statePutSelectedElem, 
-  statePutSkemaDoc, stateGet, stateSelectElement, stateInsertNewArrow ) 
+  statePutSkemaDoc, stateGet, stateSelectElement, stateInsertNewArrow,
+  statePutSkemaDocFilename ) 
        where
 \end{code}
 
@@ -38,6 +39,7 @@ import Skema.SkemaDoc(
 -- | 'SkemaState', the (mutable) editor state.
 data SkemaState = SkemaState
     { skemaDoc :: SkemaDoc -- ^ Skema document loaded in editor
+    , skemaDocFile :: Maybe FilePath -- ^ Skema document filename
     , selectedPos :: !Pos2D -- ^ last selected position
     , selectedPos2 :: !Pos2D -- ^ additional selected position
     , selectedElem :: Maybe SelectedElement -- ^ current selected element 
@@ -47,13 +49,17 @@ data SkemaState = SkemaState
 
 \begin{code}
 emptySkemaState :: SkemaState
-emptySkemaState = SkemaState emptySkemaDoc (Pos2D (0,0)) (Pos2D (0,0)) Nothing Nothing
+emptySkemaState = SkemaState emptySkemaDoc Nothing 
+                  (Pos2D (0,0)) (Pos2D (0,0)) Nothing Nothing
 \end{code}
 
 \begin{code}
 -- | The 'XS' monad 'StateT' transformer over 'IO' encapsulating the editor state
 newtype XS a = XS (StateT SkemaState IO a)
     deriving( Monad, MonadIO, MonadState SkemaState )
+
+instance Functor XS where
+  fmap f x = x >>= (return . f)
 \end{code}
 
 \begin{code}
@@ -95,6 +101,11 @@ statePutSelectedElem se = get >>= \s -> put $ s{ selectedElem = se }
 \begin{code}
 statePutSkemaDoc :: SkemaDoc -> XS ()
 statePutSkemaDoc sd = get >>= \s -> put $ s{ skemaDoc = sd }
+\end{code}
+
+\begin{code}
+statePutSkemaDocFilename :: Maybe FilePath -> XS ()
+statePutSkemaDocFilename fl = get >>= \s -> put $ s{ skemaDocFile = fl }
 \end{code}
 
 \begin{code}

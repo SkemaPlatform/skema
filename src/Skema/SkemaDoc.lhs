@@ -34,11 +34,17 @@ module Skema.SkemaDoc(
 \begin{code}
 import Data.Maybe( fromJust, isJust, mapMaybe )
 import Data.List( partition, find )
+import Control.Applicative( pure, (<$>), (<*>) )
 import Control.Monad( msum, liftM )
 import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
-  IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, filter )
+  IntMap, empty, lookup, elems, assocs, fromList, toList, insert, keys, 
+  delete, filter )
 import qualified Data.Map as M( fromList )
+import Data.String( fromString )
+import Data.Aeson( 
+  Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:), fromJSON )
+import Data.Aeson.Types( typeMismatch )
 import Skema.Editor.Types( 
   Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
 import Skema.Types( IOPointType(..), IOPointDataType(..), isSameBaseType )
@@ -525,3 +531,87 @@ toPFArrow skdoc arrow = do
   pointI <- MI.lookup (inputPoint arrow) (iopoints kernelI)
   return $ PFArrow (fromSID nidxO, iopName pointO) (fromSID nidxI, iopName pointI)
 \end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+instance ToJSON IOPoint where
+  toJSON iop = object [
+    fromString "iopName" .= iopName iop,
+    fromString "iopDataType" .= iopDataType iop,
+    fromString "iopType" .= iopType iop
+    ]
+  
+instance FromJSON IOPoint where
+  parseJSON (Object v) = IOPoint <$>
+                         v .: fromString "iopName" <*>
+                         v .: fromString "iopDataType" <*>
+                         v .: fromString "iopType"
+  parseJSON v = typeMismatch "IOPoint" v
+\end{code}
+
+\begin{code}
+instance ToJSON Kernel where
+  toJSON krn = object [
+    fromString "kernelName" .= name krn, 
+    fromString "kernelBody" .= body krn,
+    fromString "kernelIO" .= iopoints krn]
+
+instance FromJSON Kernel where
+  parseJSON (Object v) = Kernel <$>
+                         v .: fromString "kernelName" <*>
+                         v .: fromString "kernelBody" <*>
+                         v .: fromString "kernelIO"
+  parseJSON v = typeMismatch "Kernel" v
+\end{code}
+
+\begin{code}
+instance ToJSON Node where
+  toJSON node = object [
+    fromString "position" .= position node,
+    fromString "kernel" .= (toInt . kernelIdx) node
+    ]
+
+instance FromJSON Node where
+  parseJSON (Object v) = do
+    pos <- v .: fromString "position"
+    kid <- v .: fromString "kernel"
+    pure $ NodeKernel pos (fromInt kid)
+  parseJSON v = typeMismatch "Node" v
+\end{code}
+
+\begin{code}
+instance ToJSON NodeArrow where
+  toJSON arr = object [
+    fromString "outputNode" .= (toInt . outputNode) arr,
+    fromString "outputPoint" .= outputPoint arr,
+    fromString "inputNode" .= (toInt . inputNode) arr,
+    fromString "inputPoint" .= inputPoint arr
+    ]
+               
+instance FromJSON NodeArrow where
+  parseJSON (Object v) = do
+    onode <- v .: fromString "outputNode"
+    opoint <- v .: fromString "outputPoint"
+    inode <- v .: fromString "inputNode"
+    ipoint <- v .: fromString "inputPoint"
+    pure $ NodeArrow (fromInt onode) opoint (fromInt inode) ipoint
+  parseJSON v = typeMismatch "NodeArrow" v
+\end{code}
+
+\begin{code}
+instance ToJSON SkemaDoc where
+  toJSON doc = object [
+    fromString "kernels" .= library doc,
+    fromString "nodes" .= nodes doc,
+    fromString "arrows" .= arrows doc
+    ]
+
+instance FromJSON SkemaDoc where
+  parseJSON (Object v) = SkemaDoc <$>
+                         v .: fromString "kernels" <*>
+                         v .: fromString "nodes" <*>
+                         v .: fromString "arrows"  
+  parseJSON v = typeMismatch "SkemaDoc" v
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
