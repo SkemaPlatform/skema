@@ -54,6 +54,9 @@ emptySkemaState = SkemaState emptySkemaDoc (Pos2D (0,0)) (Pos2D (0,0)) Nothing N
 -- | The 'XS' monad 'StateT' transformer over 'IO' encapsulating the editor state
 newtype XS a = XS (StateT SkemaState IO a)
     deriving( Monad, MonadIO, MonadState SkemaState )
+
+instance Functor XS where
+  fmap f x = x >>= (return . f)
 \end{code}
 
 \begin{code}
