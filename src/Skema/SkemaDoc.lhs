@@ -31,6 +31,7 @@ module Skema.SkemaDoc(
   ) where
 \end{code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
 import Data.Maybe( fromJust, isJust, mapMaybe )
 import Data.List( partition, find )
@@ -38,12 +39,12 @@ import Control.Applicative( pure, (<$>), (<*>) )
 import Control.Monad( msum, liftM )
 import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
-  IntMap, empty, lookup, elems, assocs, fromList, toList, insert, keys, 
-  delete, filter )
+  IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, 
+  filter )
 import qualified Data.Map as M( fromList )
 import Data.String( fromString )
 import Data.Aeson( 
-  Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:), fromJSON )
+  Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:) )
 import Data.Aeson.Types( typeMismatch )
 import Skema.Editor.Types( 
   Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
