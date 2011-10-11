@@ -36,7 +36,6 @@ import Graphics.UI.Gtk.Scrolling.ScrolledWindow(
   castToScrolledWindow, scrolledWindowAddWithViewport )
 import Graphics.UI.Gtk.Buttons.Button( castToButton, buttonActivated )
 import Graphics.UI.Gtk.General.StockItems( stockOk )
-import Graphics.UI.Gtk.Entry.Entry( entryNew )
 import Graphics.UI.Gtk.Entry.SpinButton( 
   SpinButton, spinButtonNew, spinButtonGetValue, afterInput, 
   spinButtonSetValue )

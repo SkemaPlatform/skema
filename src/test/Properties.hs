@@ -43,7 +43,7 @@ prop_pos2d_signum :: Pos2D -> Bool
 prop_pos2d_signum pos = abs pos * signum pos == pos
 
 prop_pos2d_sum :: Pos2D -> Pos2D -> Bool
-prop_pos2d_sum pa pb  = pa + pb == pb + pa
+prop_pos2d_sum pa pb  = pa + pb == pb - pa
 
 -- -----------------------------------------------------------------------------
 -- Skema.Editor.Types
