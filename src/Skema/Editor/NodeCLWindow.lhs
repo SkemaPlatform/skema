@@ -30,16 +30,22 @@ import Graphics.UI.Gtk(
   on, get, containerAdd, widgetShowAll, widgetSetSizeRequest, 
   scrolledWindowNew, widgetDestroy, widgetGetState, widgetModifyBase, Color(..), 
   windowSetDefault, bufferChanged, toWindow )
-import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
-import Graphics.UI.Gtk.Windows.Dialog( Dialog,
-  ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton, 
-  dialogSetResponseSensitive )
+import Graphics.UI.Gtk.Abstract.Widget( widgetSetSensitive )
+import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
+import Graphics.UI.Gtk.Buttons.ToggleButton( 
+  toggled, toggleButtonGetActive, toggleButtonSetActive )
+import Graphics.UI.Gtk.Buttons.CheckButton( checkButtonNewWithLabel )
+import Graphics.UI.Gtk.Windows.Dialog( 
+  Dialog, ResponseId(..), dialogNew, dialogRun, dialogGetUpper, 
+  dialogAddButton, dialogSetResponseSensitive )
 import Graphics.UI.Gtk.Windows.MessageDialog( 
   messageDialogNew, DialogFlags(..), MessageType(..), ButtonsType(..) )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Entry.Editable( editableChanged )
 import Graphics.UI.Gtk.Entry.Entry( Entry, entryNew, entryText, entrySetText )
+import Graphics.UI.Gtk.Entry.SpinButton( 
+  spinButtonNewWithRange, spinButtonSetValue, spinButtonGetValueAsInt )
 import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
 import Graphics.UI.Gtk.Layout.VBox( VBox, vBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
@@ -57,13 +63,14 @@ import Graphics.UI.Gtk.ModelView(
   makeColumnIdString, cellRendererToggleNew, cellToggled,
   -- additional
   customStoreSetColumn, edited, editingStarted, stringToTreePath )
-import Graphics.UI.Gtk.SourceView( SourceBuffer,
-  sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
-  sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
-  sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme, 
-  sourceBufferNew, sourceBufferSetLanguage, sourceBufferSetStyleScheme, 
-  sourceBufferSetHighlightSyntax, sourceViewNewWithBuffer, 
-  sourceBufferBeginNotUndoableAction, sourceBufferEndNotUndoableAction )
+import Graphics.UI.Gtk.SourceView( 
+  SourceBuffer, sourceLanguageManagerGetDefault, 
+  sourceLanguageManagerGetSearchPath, sourceLanguageManagerSetSearchPath, 
+  sourceLanguageManagerGetLanguage, sourceStyleSchemeManagerGetDefault, 
+  sourceStyleSchemeManagerGetScheme, sourceBufferNew, sourceBufferSetLanguage, 
+  sourceBufferSetStyleScheme, sourceBufferSetHighlightSyntax, 
+  sourceViewNewWithBuffer, sourceBufferBeginNotUndoableAction, 
+  sourceBufferEndNotUndoableAction )
 import Skema.SkemaDoc( Kernel(..), IOPoint(..), isInputPoint, isOutputPoint )
 import Skema.Types( openclTypeNames, IOPointType(..) )
 import Skema.Util( duplicates )
@@ -88,6 +95,23 @@ showNodeCLWindow krn usedNames = do
   -- create widgets
   eName <- createKernelName internal (name krn)
   (storeInputs, storeOutputs) <- createParameters window internal krn
+  
+  hbox <- hBoxNew True 0
+  tick <- checkButtonNewWithLabel "Fixed Work Items:"
+  boxPackStart hbox tick PackNatural 0  
+  nWorkItems <- spinButtonNewWithRange 1 1000 1
+  case workItems krn of
+    Nothing -> do
+      widgetSetSensitive nWorkItems False
+      toggleButtonSetActive tick False
+    Just n -> do
+      widgetSetSensitive nWorkItems True
+      spinButtonSetValue nWorkItems (fromIntegral n)
+      toggleButtonSetActive tick True
+      
+  boxPackStart hbox nWorkItems PackNatural 0  
+  boxPackStart internal hbox PackNatural 0
+
   sbuff <- createSourceBuffer internal (body krn)
   
   -- buttons
@@ -111,6 +135,13 @@ showNodeCLWindow krn usedNames = do
   _ <- sbuff `on` bufferChanged $
     dialogSetResponseSensitive window ResponseAccept True
     
+  _ <- tick `on` toggled $ do
+    dialogSetResponseSensitive window ResponseAccept True
+    active <- toggleButtonGetActive tick
+    widgetSetSensitive nWorkItems active
+    
+  _ <- nWorkItems `on` editableChanged $ do
+    dialogSetResponseSensitive window ResponseAccept True
   
   -- get the response and return
   resp <- dialogRun window   
@@ -132,6 +163,9 @@ showNodeCLWindow krn usedNames = do
           outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
           newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
       
+      activeWI <- toggleButtonGetActive tick
+      newWorkItems <- spinButtonGetValueAsInt nWorkItems
+        
       unless validParams $ 
         errorMsg (Just . toWindow $ window) 
         "Invalid Parameters Names. Using old ones."
@@ -142,7 +176,10 @@ showNodeCLWindow krn usedNames = do
                           else name krn,
                    iopoints = if validParams
                               then newPoints
-                              else iopoints krn
+                              else iopoints krn,
+                   workItems = if activeWI
+                               then (Just newWorkItems)
+                               else Nothing
                  }
   
     _ -> return krn
