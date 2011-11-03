@@ -162,16 +162,18 @@ isOutputPoint = (==OutputPoint) . iopType
 \end{code}
 
 \begin{code}
-data Kernel = Kernel
-    { name :: String 
-    , body :: String
-    , iopoints :: MI.IntMap IOPoint }
-    deriving( Show, Eq )
+data Kernel = Kernel{ 
+  name :: String, 
+  body :: String, 
+  iopoints :: MI.IntMap IOPoint,
+  workItems :: Maybe Int
+  }
+            deriving( Show, Eq )
 \end{code}
 
 \begin{code}
 emptyKernel :: Kernel
-emptyKernel = Kernel "" "" MI.empty
+emptyKernel = Kernel "" "" MI.empty Nothing
 \end{code}
 
 \begin{code}
@@ -555,13 +557,15 @@ instance ToJSON Kernel where
   toJSON krn = object [
     fromString "kernelName" .= name krn, 
     fromString "kernelBody" .= body krn,
-    fromString "kernelIO" .= iopoints krn]
+    fromString "kernelIO" .= iopoints krn,
+    fromString "kernelWorkItems" .= workItems krn]
 
 instance FromJSON Kernel where
   parseJSON (Object v) = Kernel <$>
                          v .: fromString "kernelName" <*>
                          v .: fromString "kernelBody" <*>
-                         v .: fromString "kernelIO"
+                         v .: fromString "kernelIO" <*>
+                         v .: fromString "kernelWorkItems"
   parseJSON v = typeMismatch "Kernel" v
 \end{code}
 
