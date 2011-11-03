@@ -504,7 +504,7 @@ extractProgramFlow skdoc = emptyProgramFlow
 
 \begin{code}
 toPFKernel :: Kernel -> PFKernel
-toPFKernel kernel = PFKernel (body kernel) kios Nothing
+toPFKernel kernel = PFKernel (body kernel) kios (workItems kernel)
     where
       kios = M.fromList . map (iopName &&& toPFIOPoint) . MI.elems . iopoints $ kernel
 \end{code}
