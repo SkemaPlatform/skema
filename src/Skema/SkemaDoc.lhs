@@ -15,6 +15,7 @@
 % along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
+{-# LANGUAGE OverloadedStrings #-}
 module Skema.SkemaDoc( 
   -- Types
   SDKernelID, SDNodeID, SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), 
@@ -42,7 +43,6 @@ import qualified Data.IntMap as MI(
   IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, 
   filter )
 import qualified Data.Map as M( fromList )
-import Data.String( fromString )
 import Data.Aeson( 
   Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:) )
 import Data.Aeson.Types( typeMismatch )
@@ -539,47 +539,47 @@ toPFArrow skdoc arrow = do
 \begin{code}
 instance ToJSON IOPoint where
   toJSON iop = object [
-    fromString "iopName" .= iopName iop,
-    fromString "iopDataType" .= iopDataType iop,
-    fromString "iopType" .= iopType iop
+    "iopName" .= iopName iop,
+    "iopDataType" .= iopDataType iop,
+    "iopType" .= iopType iop
     ]
   
 instance FromJSON IOPoint where
   parseJSON (Object v) = IOPoint <$>
-                         v .: fromString "iopName" <*>
-                         v .: fromString "iopDataType" <*>
-                         v .: fromString "iopType"
+                         v .: "iopName" <*>
+                         v .: "iopDataType" <*>
+                         v .: "iopType"
   parseJSON v = typeMismatch "IOPoint" v
 \end{code}
 
 \begin{code}
 instance ToJSON Kernel where
   toJSON krn = object [
-    fromString "kernelName" .= name krn, 
-    fromString "kernelBody" .= body krn,
-    fromString "kernelIO" .= iopoints krn,
-    fromString "kernelWorkItems" .= workItems krn]
+    "kernelName" .= name krn, 
+    "kernelBody" .= body krn,
+    "kernelIO" .= iopoints krn,
+    "kernelWorkItems" .= workItems krn]
 
 instance FromJSON Kernel where
   parseJSON (Object v) = Kernel <$>
-                         v .: fromString "kernelName" <*>
-                         v .: fromString "kernelBody" <*>
-                         v .: fromString "kernelIO" <*>
-                         v .: fromString "kernelWorkItems"
+                         v .: "kernelName" <*>
+                         v .: "kernelBody" <*>
+                         v .: "kernelIO" <*>
+                         v .: "kernelWorkItems"
   parseJSON v = typeMismatch "Kernel" v
 \end{code}
 
 \begin{code}
 instance ToJSON Node where
   toJSON node = object [
-    fromString "position" .= position node,
-    fromString "kernel" .= (toInt . kernelIdx) node
+    "position" .= position node,
+    "kernel" .= (toInt . kernelIdx) node
     ]
 
 instance FromJSON Node where
   parseJSON (Object v) = do
-    pos <- v .: fromString "position"
-    kid <- v .: fromString "kernel"
+    pos <- v .: "position"
+    kid <- v .: "kernel"
     pure $ NodeKernel pos (fromInt kid)
   parseJSON v = typeMismatch "Node" v
 \end{code}
@@ -587,18 +587,18 @@ instance FromJSON Node where
 \begin{code}
 instance ToJSON NodeArrow where
   toJSON arr = object [
-    fromString "outputNode" .= (toInt . outputNode) arr,
-    fromString "outputPoint" .= outputPoint arr,
-    fromString "inputNode" .= (toInt . inputNode) arr,
-    fromString "inputPoint" .= inputPoint arr
+    "outputNode" .= (toInt . outputNode) arr,
+    "outputPoint" .= outputPoint arr,
+    "inputNode" .= (toInt . inputNode) arr,
+    "inputPoint" .= inputPoint arr
     ]
                
 instance FromJSON NodeArrow where
   parseJSON (Object v) = do
-    onode <- v .: fromString "outputNode"
-    opoint <- v .: fromString "outputPoint"
-    inode <- v .: fromString "inputNode"
-    ipoint <- v .: fromString "inputPoint"
+    onode <- v .: "outputNode"
+    opoint <- v .: "outputPoint"
+    inode <- v .: "inputNode"
+    ipoint <- v .: "inputPoint"
     pure $ NodeArrow (fromInt onode) opoint (fromInt inode) ipoint
   parseJSON v = typeMismatch "NodeArrow" v
 \end{code}
@@ -606,16 +606,16 @@ instance FromJSON NodeArrow where
 \begin{code}
 instance ToJSON SkemaDoc where
   toJSON doc = object [
-    fromString "kernels" .= library doc,
-    fromString "nodes" .= nodes doc,
-    fromString "arrows" .= arrows doc
+    "kernels" .= library doc,
+    "nodes" .= nodes doc,
+    "arrows" .= arrows doc
     ]
 
 instance FromJSON SkemaDoc where
   parseJSON (Object v) = SkemaDoc <$>
-                         v .: fromString "kernels" <*>
-                         v .: fromString "nodes" <*>
-                         v .: fromString "arrows"  
+                         v .: "kernels" <*>
+                         v .: "nodes" <*>
+                         v .: "arrows"  
   parseJSON v = typeMismatch "SkemaDoc" v
 \end{code}
 
