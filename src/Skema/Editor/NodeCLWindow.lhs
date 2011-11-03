@@ -32,16 +32,16 @@ import Graphics.UI.Gtk(
   windowSetDefault, bufferChanged, toWindow )
 import Graphics.UI.Gtk.General.StockItems( stockApply, stockCancel )
 import Graphics.UI.Gtk.Abstract.Box( Packing(..), boxPackStart )
-import Graphics.UI.Gtk.Windows.Dialog( 
+import Graphics.UI.Gtk.Windows.Dialog( Dialog,
   ResponseId(..), dialogNew, dialogRun, dialogGetUpper, dialogAddButton, 
   dialogSetResponseSensitive )
 import Graphics.UI.Gtk.Windows.MessageDialog( 
   messageDialogNew, DialogFlags(..), MessageType(..), ButtonsType(..) )
 import Graphics.UI.Gtk.Display.Label( labelNew )
 import Graphics.UI.Gtk.Entry.Editable( editableChanged )
-import Graphics.UI.Gtk.Entry.Entry( entryNew, entryText, entrySetText )
+import Graphics.UI.Gtk.Entry.Entry( Entry, entryNew, entryText, entrySetText )
 import Graphics.UI.Gtk.Layout.HBox( hBoxNew )
-import Graphics.UI.Gtk.Layout.VBox( vBoxNew )
+import Graphics.UI.Gtk.Layout.VBox( VBox, vBoxNew )
 import Graphics.UI.Gtk.Multiline.TextBuffer( textBufferSetText, textBufferText )
 import Graphics.UI.Gtk.ModelView( 
   -- tree functions
@@ -57,7 +57,7 @@ import Graphics.UI.Gtk.ModelView(
   makeColumnIdString, cellRendererToggleNew, cellToggled,
   -- additional
   customStoreSetColumn, edited, editingStarted, stringToTreePath )
-import Graphics.UI.Gtk.SourceView( 
+import Graphics.UI.Gtk.SourceView( SourceBuffer,
   sourceLanguageManagerGetDefault, sourceLanguageManagerGetSearchPath, 
   sourceLanguageManagerSetSearchPath, sourceLanguageManagerGetLanguage, 
   sourceStyleSchemeManagerGetDefault, sourceStyleSchemeManagerGetScheme, 
@@ -83,33 +83,103 @@ showNodeCLWindow krn usedNames = do
   window <- dialogNew
   widgetSetSizeRequest window 640 480
   
-  datadir <- getDataDir
-  
-  slman <- sourceLanguageManagerGetDefault
-  paths <- sourceLanguageManagerGetSearchPath slman
-  sourceLanguageManagerSetSearchPath slman (Just $ paths ++ [datadir])
-  slang <- sourceLanguageManagerGetLanguage slman "opencl"
-  when (isNothing slang) $ print "error: no language file"
-  
-  slsty <- sourceStyleSchemeManagerGetDefault
-  ssty <- sourceStyleSchemeManagerGetScheme slsty "classic"
-  
   internal <- dialogGetUpper window
   
-  -- kernel name widgets
+  -- create widgets
+  eName <- createKernelName internal (name krn)
+  (storeInputs, storeOutputs) <- createParameters window internal krn
+  sbuff <- createSourceBuffer internal (body krn)
+  
+  -- buttons
+  acceptButton <- dialogAddButton window stockApply ResponseAccept
+  _ <- dialogAddButton window stockCancel ResponseReject  
+  windowSetDefault window $ Just acceptButton
+  
+  dialogSetResponseSensitive window ResponseAccept False
+  
+  widgetShowAll window 
+  
+  -- events
+  _ <- eName `on` editableChanged $ do
+    newName <- get eName entryText
+    dialogSetResponseSensitive window ResponseAccept True
+    eNameState <- widgetGetState eName 
+    if validName newName usedNames 
+      then widgetModifyBase eName eNameState goodColor
+      else widgetModifyBase eName eNameState badColor
+           
+  _ <- sbuff `on` bufferChanged $
+    dialogSetResponseSensitive window ResponseAccept True
+    
+  
+  -- get the response and return
+  resp <- dialogRun window   
+  newkrn <- case resp of
+    ResponseAccept -> do
+      newBody <- get sbuff textBufferText
+      newName <- get eName entryText      
+      
+      unless (validName newName usedNames) $
+        errorMsg (Just . toWindow $ window) 
+        "Invalid Kernel Name. Using old one."
+        
+      ins <- fmap init $ listStoreToList storeInputs
+      outs <- fmap init $ listStoreToList storeOutputs      
+      let paramNames = map fst $ ins ++ outs
+          dups = duplicates paramNames
+          validParams = null dups && all (`validName` []) paramNames
+          inPoints = map (\(n,t) -> IOPoint n (read t) InputPoint) ins
+          outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
+          newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
+      
+      unless validParams $ 
+        errorMsg (Just . toWindow $ window) 
+        "Invalid Parameters Names. Using old ones."
+        
+      return krn { body = newBody, 
+                   name = if validName newName usedNames
+                          then newName 
+                          else name krn,
+                   iopoints = if validParams
+                              then newPoints
+                              else iopoints krn
+                 }
+  
+    _ -> return krn
+    
+  widgetDestroy window
+  return newkrn
+    where 
+      errorMsg parent msg = do
+        msgDlg <- messageDialogNew parent 
+                  [DialogModal] MessageError ButtonsOk msg
+        widgetShowAll msgDlg
+        _ <- dialogRun msgDlg
+        widgetDestroy msgDlg
+\end{code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{code}
+createKernelName :: VBox -> String -> IO Entry
+createKernelName box old = do
   hbox0 <- hBoxNew True 0
   lblName <- labelNew $ Just "Name:"
   boxPackStart hbox0 lblName PackNatural 0
   eName <- entryNew 
-  entrySetText eName $ name krn
+  entrySetText eName old
   eNameState <- widgetGetState eName 
   widgetModifyBase eName eNameState goodColor
   boxPackStart hbox0 eName PackGrow 0
-  boxPackStart internal hbox0 PackNatural 0
-  
-  -- parameters
+  boxPackStart box hbox0 PackNatural 0
+  return eName
+\end{code}
+
+\begin{code}
+createParameters :: Dialog -> VBox -> Kernel 
+                    -> IO (ListStore (String,String), ListStore (String,String))
+createParameters window box krn = do
   hbox1 <- hBoxNew True 0  
-  boxPackStart internal hbox1 PackNatural 0
+  boxPackStart box hbox1 PackNatural 0
   
   -- input widgets
   vboxInput <- vBoxNew False 0
@@ -140,89 +210,46 @@ showNodeCLWindow krn usedNames = do
   
   setupParameterList "outp" outputList storeOutputs $ 
     dialogSetResponseSensitive window ResponseAccept True
+    
+  return (storeInputs, storeOutputs)
+\end{code}
+
+\begin{code}
+createSourceBuffer :: VBox -> String -> IO SourceBuffer
+createSourceBuffer box old = do
+  -- configure language
+  datadir <- getDataDir
   
-  -- body widgets
+  slman <- sourceLanguageManagerGetDefault
+  paths <- sourceLanguageManagerGetSearchPath slman
+  sourceLanguageManagerSetSearchPath slman (Just $ paths ++ [datadir])
+  slang <- sourceLanguageManagerGetLanguage slman "opencl"
+  when (isNothing slang) $ print "error: no language file"
+  
+  slsty <- sourceStyleSchemeManagerGetDefault
+  ssty <- sourceStyleSchemeManagerGetScheme slsty "classic"
+  
+  -- create Source Input Widget
   lbl2 <- labelNew $ Just "Kernel Body"
-  boxPackStart internal lbl2 PackNatural 0
+  boxPackStart box lbl2 PackNatural 0
   sbuff <- sourceBufferNew Nothing
   sourceBufferSetLanguage sbuff slang
   sourceBufferSetStyleScheme sbuff (Just ssty)
   sourceBufferSetHighlightSyntax sbuff True
   sourceBufferBeginNotUndoableAction sbuff
-  textBufferSetText sbuff (body krn)
+  textBufferSetText sbuff old
   sourceBufferEndNotUndoableAction sbuff
   sourceview <- sourceViewNewWithBuffer sbuff
   sw <- scrolledWindowNew Nothing Nothing
   containerAdd sw sourceview
-  boxPackStart internal sw PackGrow 0
-  
-  -- buttons
-  acceptButton <- dialogAddButton window stockApply ResponseAccept
-  _ <- dialogAddButton window stockCancel ResponseReject  
-  windowSetDefault window $ Just acceptButton
-  
-  dialogSetResponseSensitive window ResponseAccept False
-  
-  widgetShowAll window 
-  
-  -- events
-  _ <- eName `on` editableChanged $ do
-    newName <- get eName entryText
-    dialogSetResponseSensitive window ResponseAccept True
-    if validName newName usedNames 
-      then widgetModifyBase eName eNameState goodColor
-      else widgetModifyBase eName eNameState badColor
-           
-  _ <- sbuff `on` bufferChanged $
-    dialogSetResponseSensitive window ResponseAccept True
-    
-  
-  -- get the response and return
-  resp <- dialogRun window   
-  newkrn <- case resp of
-    ResponseAccept -> do
-      newBody <- get sbuff textBufferText
-      newName <- get eName entryText      
-      
-      unless (validName newName usedNames) $
-        errorMsg (Just . toWindow $ window) "Invalid Kernel Name. Using old one."
-        
-      ins <- fmap init $ listStoreToList storeInputs
-      outs <- fmap init $ listStoreToList storeOutputs      
-      let paramNames = map fst $ ins ++ outs
-          dups = duplicates paramNames
-          validParams = null dups && all (`validName` []) paramNames
-          inPoints = map (\(n,t) -> IOPoint n (read t) InputPoint) ins
-          outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
-          newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
-      
-      unless validParams $ 
-        errorMsg (Just . toWindow $ window) "Invalid Parameters Names. Using old ones."
-        
-      return krn { body = newBody, 
-                   name = if validName newName usedNames
-                          then newName 
-                          else name krn,
-                   iopoints = if validParams
-                              then newPoints
-                              else iopoints krn
-                 }
-  
-    _ -> return krn
-    
-  widgetDestroy window
-  return newkrn
-    where 
-      errorMsg parent msg = do
-        msgDlg <- messageDialogNew parent [DialogModal] MessageError ButtonsOk msg
-        widgetShowAll msgDlg
-        _ <- dialogRun msgDlg
-        widgetDestroy msgDlg
+  boxPackStart box sw PackGrow 0
+  return sbuff
 \end{code}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{code}
-setupParameterList :: String -> TreeView -> ListStore (String,String) -> IO () -> IO ()
+setupParameterList :: String -> TreeView -> ListStore (String,String) -> IO () 
+                      -> IO ()
 setupParameterList newpre list store applyChanged = do
   treeViewSetModel list store
   treeViewSetHeadersVisible list True
