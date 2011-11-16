@@ -42,7 +42,7 @@ import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
   IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, 
   filter )
-import qualified Data.Map as M( fromList )
+import qualified Data.Map as M( fromList, empty )
 import Data.Aeson( 
   Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:) )
 import Data.Aeson.Types( typeMismatch )
@@ -504,7 +504,7 @@ extractProgramFlow skdoc = emptyProgramFlow
 
 \begin{code}
 toPFKernel :: Kernel -> PFKernel
-toPFKernel kernel = PFKernel (body kernel) kios (workItems kernel)
+toPFKernel kernel = PFKernel (body kernel) kios M.empty (workItems kernel)
     where
       kios = M.fromList . map (iopName &&& toPFIOPoint) . MI.elems . iopoints $ kernel
 \end{code}
