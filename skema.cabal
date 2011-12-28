@@ -26,7 +26,7 @@ flag testing
 Library
   hs-source-dirs:  src
   ghc-options:     -Wall
-  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.3.2.*, skema-common==0.3.*
+  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.4.0.*, skema-common==0.3.*
   Exposed-modules: 
     Skema
     Skema.SkemaDoc
@@ -43,7 +43,7 @@ Executable skema
   ghc-options:     -Wall
   ghc-prof-options: -prof -auto-all
   Main-is:         skema_main.lhs
-  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.3.2.*, skema-common==0.3.*, hgettext==0.1.*, setlocale==0.0.3
+  Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.4.0.*, skema-common==0.3.*, hgettext==0.1.*, setlocale==0.0.3
 
   if flag(coverage)
     ghc-options:   -fhpc
@@ -54,7 +54,7 @@ Executable skema-test
   hs-source-dirs:  src src/test
   ghc-options:     -Wall -fhpc -Werror
   Main-is:         skema_test.lhs
-  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2, cairo==0.12.*, glib==0.12.*, gtk==0.12.*, glade==0.12.*, gtksourceview2==0.12.*, skema-common==0.3.*, aeson==0.3.2.*
+  Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2, cairo==0.12.*, glib==0.12.*, gtk==0.12.*, glade==0.12.*, gtksourceview2==0.12.*, skema-common==0.3.*, aeson==0.4.0.*
   cpp-options:   -DTESTING
 
   if flag(testing)
