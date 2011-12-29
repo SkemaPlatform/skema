@@ -1,25 +1,23 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file is part of Skema.
+{- -----------------------------------------------------------------------------
+Copyright (C) 2011  Luis Cabellos - Instituto de Fisica de Cantabria
+This file is part of Skema.
 
-% Skema is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-%  (at your option) any later version.
+Skema is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-% Skema is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
+Skema is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-% You should have received a copy of the GNU General Public License
-% along with Skema.  If not, see <http://www.gnu.org/licenses/>.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+You should have received a copy of the GNU General Public License
+along with Skema.  If not, see <http://www.gnu.org/licenses/>.
+-- ----------------------------------------------------------------------------}
 module Skema.Editor.PFPreviewWindow( showPFPreviewWindow ) where
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 import Data.Maybe( isJust, fromJust )
 import Control.Monad.Trans( liftIO )
 import Control.Monad( when, unless, forM_ )
@@ -42,10 +40,8 @@ import Skema.Editor.SkemaState( SkemaState(..) )
 import Skema.SkemaDoc( extractProgramFlow )
 import Skema.ProgramFlow( generateJSONString )
 import Skema.JSON( prettyJSON )
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 showPFPreviewWindow :: MVar SkemaState -> IO ()
 showPFPreviewWindow state = do
   glade <- getDataFileName "pf_preview.glade"
@@ -95,6 +91,5 @@ showPFPreviewWindow state = do
       loop window = do
         resp <- dialogRun window 
         unless (resp == ResponseNone) $ loop window
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- -----------------------------------------------------------------------------

@@ -1,33 +1,30 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file is part of Skema.
+{- -----------------------------------------------------------------------------
+Copyright (C) 2011  Luis Cabellos - Instituto de Fisica de Cantabria
+This file is part of Skema.
 
-% Skema is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-%  (at your option) any later version.
+Skema is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-% Skema is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
+Skema is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-% You should have received a copy of the GNU General Public License
-% along with Skema.  If not, see <http://www.gnu.org/licenses/>.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+You should have received a copy of the GNU General Public License
+along with Skema.  If not, see <http://www.gnu.org/licenses/>.
+-- ----------------------------------------------------------------------------}
 module Skema.Editor.Canvas( drawSkemaDoc, drawSelected ) where
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 import Control.Monad( liftM, when )
 import Data.Maybe( isJust, isJust, fromJust )
 import qualified Data.IntMap as M( elems )
-import qualified Graphics.Rendering.Cairo as Cr
-    ( Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA
-    , setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo
-    , selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo
-    , setDash )
+import qualified Graphics.Rendering.Cairo as Cr( 
+  Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA, 
+  setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo, 
+  selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo, setDash )
 import Skema.SkemaDoc( 
   SDKernelID, SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, 
   SelectedElement(..), nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, 
@@ -35,13 +32,11 @@ import Skema.SkemaDoc(
   arrowPosition, nodeIOPPosition, isInputPoint, iopName, iopDataType )
 import Skema.Math( deg2rad )
 import Skema.Editor.Types( Pos2D(..), RGBColor, posx, posy )
-import Skema.Editor.Util
-    ( roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn
-    , calcFontHeight, drawLine )
-\end{code}
+import Skema.Editor.Util( 
+  roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn, 
+  calcFontHeight, drawLine )
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 class ElemColor a where
     lineColor :: a -> RGBColor
     lineColor = const (0.15,0.15,0.15)
@@ -54,10 +49,8 @@ instance ElemColor IOPoint where
     fillColor point
         | isInputPoint point = (0.78,0.78,0.16)
         | otherwise = (0.16,0.78,0.78)
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 drawSkemaDoc :: Double -> Double -> SkemaDoc -> Maybe SDKernelID -> Cr.Render ()
 drawSkemaDoc _ _ skdoc sel = do
   Cr.setSourceRGB 0.45 0.45 0.45
@@ -69,9 +62,7 @@ drawSkemaDoc _ _ skdoc sel = do
     filter ((== fromJust sel).kernelIdx) . M.elems.nodes $ skdoc
   mapM_ (drawVisualNode skdoc) (M.elems.nodes $ skdoc)
   mapM_ (drawArrow skdoc) (arrows skdoc)
-\end{code}
 
-\begin{code}
 drawSelKernel :: Node -> Cr.Render ()
 drawSelKernel node = do
   let px = nodePosx node
@@ -84,9 +75,7 @@ drawSelKernel node = do
   Cr.setSourceRGBA 1 1 1 0.4
   roundedRectanglePath (px-sinc) (py+sinc) (wid+sinc*2) hei 4
   Cr.fill
-\end{code}
 
-\begin{code}
 drawVisualNode :: SkemaDoc -> Node -> Cr.Render ()
 drawVisualNode skdoc node = do
   let px = nodePosx node
@@ -128,9 +117,7 @@ drawVisualNode skdoc node = do
   Cr.setFontSize 8
   mapM_ (drawIOPoint node) (zip [0..] $ nodeInputPoints skdoc node)
   mapM_ (drawIOPoint node) (zip [0..] $ nodeOutputPoints skdoc node)
-\end{code}
 
-\begin{code}
 drawIOPoint :: Node -> (Int, IOPoint) -> Cr.Render ()
 drawIOPoint node (ipos,point) = do
   let pointRad = nodePointRad node
@@ -147,10 +134,9 @@ drawIOPoint node (ipos,point) = do
     else do
       textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents name
       showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) name
-\end{code}
 
-\begin{code}
-drawSelected :: Double -> Double -> Maybe SelectedElement -> Double -> Double -> Double -> Double -> Cr.Render ()
+drawSelected :: Double -> Double -> Maybe SelectedElement 
+                -> Double -> Double -> Double -> Double -> Cr.Render ()
 drawSelected _ _ Nothing _ _ _ _ = return ()
 drawSelected _ _ (Just (SeIOP _ _)) ox oy mx my = do
   Cr.setDash [10,5] 0
@@ -158,9 +144,7 @@ drawSelected _ _ (Just (SeIOP _ _)) ox oy mx my = do
   Cr.lineTo mx my
   drawLine 1 (0.7,0.7,0.7)
 drawSelected _ _ _ _ _ _ _ = return ()
-\end{code}
 
-\begin{code}
 drawArrow :: SkemaDoc -> NodeArrow -> Cr.Render ()
 drawArrow skdoc arrow = when (isJust outpos && isJust inpos) $ do
                           Cr.moveTo px0 py0
@@ -173,6 +157,5 @@ drawArrow skdoc arrow = when (isJust outpos && isJust inpos) $ do
         py0 = posy.fromJust $ outpos
         px3 = posx.fromJust $ inpos
         py3 = posy.fromJust $ inpos
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- -----------------------------------------------------------------------------

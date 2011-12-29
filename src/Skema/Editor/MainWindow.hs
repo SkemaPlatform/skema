@@ -1,25 +1,23 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file is part of Skema.
+{- -----------------------------------------------------------------------------
+Copyright (C) 2011  Luis Cabellos - Instituto de Fisica de Cantabria
+This file is part of Skema.
 
-% Skema is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-%  (at your option) any later version.
+Skema is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-% Skema is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
+Skema is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-% You should have received a copy of the GNU General Public License
-% along with Skema.  If not, see <http://www.gnu.org/licenses/>.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+You should have received a copy of the GNU General Public License
+along with Skema.  If not, see <http://www.gnu.org/licenses/>.
+-- ----------------------------------------------------------------------------}
 module Skema.Editor.MainWindow( prepareMainWindow ) where
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 import Control.Monad( when, forM_ )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
@@ -81,10 +79,8 @@ import Skema.SkemaDoc(
 import Skema.Types( IOPointType(..) )
 import Skema.Util( toJSONString, fromJSONString )
 import Skema.Editor.Types( Pos2D(..) )
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 prepareMainWindow :: GladeXML -> MVar SkemaState -> IO ()
 prepareMainWindow xml state = do
   canvas <- xmlGetWidget xml castToDrawingArea "canvas"
@@ -239,16 +235,12 @@ prepareMainWindow xml state = do
     mainQuit
     
   return ()
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 getTreeIter :: TreeView -> ListStore a -> IO (Maybe TreeIter)
 getTreeIter tree store = (fmap fst $ treeViewGetCursor tree)
     >>= treeModelGetIter store
-\end{code}
 
-\begin{code}
 editKernel :: DrawingArea -> MVar SkemaState -> TreeView -> ListStore (SDKernelID, Kernel) -> IO ()
 editKernel canvas state tree kernels = do
   iter <- getTreeIter tree kernels
@@ -262,10 +254,8 @@ editKernel canvas state tree kernels = do
         (_,new_sks) <- runXS sks $ updateKernel i newk
         clearKernelList kernels new_sks
       widgetQueueDraw canvas    
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 setupKernelsView :: TreeView -> ListStore (SDKernelID,Kernel) -> IO ()
 setupKernelsView view model = do
   treeViewSetModel view model
@@ -295,18 +285,14 @@ setupKernelsView view model = do
   _ <- treeViewAppendColumn view col3
 
   return ()
-\end{code}
 
-\begin{code}
 clearKernelList :: ListStore (SDKernelID,Kernel) -> SkemaState -> IO SkemaState
 clearKernelList list sks = do
   listStoreClear list
   mapM_ (listStoreAppend list) (skemaDocGetKernelsAssocs $ skemaDoc sks)
   return sks{ selectedKernel = Nothing }
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 selectElement :: Double -> Double -> XS ()
 selectElement mx my = do
   selElement <- stateSelectElement (Pos2D (mx,my))
@@ -320,9 +306,7 @@ selectElement mx my = do
     when (maybe False (==InputPoint) pointType) $ do
       let marrow = findInputArrow stDoc selNode selPoint
       when (isJust marrow) (statePutSkemaDoc (deleteArrow stDoc (fromJust marrow)))
-\end{code}
 
-\begin{code}
 insertElement :: SDKernelID -> Double -> Double -> DrawingArea 
                  -> XS (Maybe SDNodeID)
 insertElement idx mx my canvas = do
@@ -333,9 +317,7 @@ insertElement idx mx my canvas = do
       io $ widgetQueueDraw canvas
       return Nothing
     else showElementMenu (fromJust selElement)
-\end{code}
 
-\begin{code}
 insertNewNode :: SDKernelID -> Double -> Double -> XS ()
 insertNewNode idx x y = do
   oldDoc <- stateGet skemaDoc
@@ -344,24 +326,18 @@ insertNewNode idx x y = do
       new_node = NodeKernel (Pos2D (x,y)) idx
   statePutSkemaDoc $ oldDoc { 
                          nodes = M.insert last_i new_node $ nodes oldDoc}
-\end{code}
 
-\begin{code}
 showElementMenu :: SelectedElement -> XS (Maybe SDNodeID)
 showElementMenu (SeNODE k) = return $ Just k
 showElementMenu _ = return Nothing
-\end{code}
 
-\begin{code}
 moveTo :: Double -> Double -> DrawingArea -> XS ()
 moveTo mx my canvas = do
   stElem <- stateGet selectedElem
   when (isJust stElem) $ do
     moveSelectedElement (Pos2D (mx,my)) (fromJust stElem)
     io $ widgetQueueDraw canvas
-\end{code}
 
-\begin{code}
 moveSelectedElement :: Pos2D -> SelectedElement -> XS ()
 moveSelectedElement mpos (SeNODE k) = do
   oldDoc <- stateGet skemaDoc
@@ -373,9 +349,7 @@ moveSelectedElement mpos (SeNODE k) = do
   statePutSkemaDoc $ skemaDocSetNodesAssocs oldDoc new_nodes
   statePutSelectedPos mpos
 moveSelectedElement mpos (SeIOP _ _) = statePutSelectedPos2 mpos
-\end{code}
 
-\begin{code}
 releaseElement :: Double -> Double -> DrawingArea -> XS ()
 releaseElement mx my canvas = do
   stElem <- stateGet selectedElem
@@ -383,9 +357,7 @@ releaseElement mx my canvas = do
     releaseSelectedElement mx my (fromJust stElem)
     io $ widgetQueueDraw canvas
     statePutSelectedElem Nothing
-\end{code}
 
-\begin{code}
 releaseSelectedElement :: Double -> Double -> SelectedElement -> XS ()
 releaseSelectedElement mx my (SeIOP ki ji) = do
   endElem <- stateSelectElement (Pos2D (mx,my))
@@ -393,10 +365,8 @@ releaseSelectedElement mx my (SeIOP ki ji) = do
     let (SeIOP kf jf) = (fromJust endElem)
     stateInsertNewArrow ki ji kf jf
 releaseSelectedElement _ _ _ = return ()
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 drawCanvas :: DrawWindow -> XS ()
 drawCanvas canvas = do
   let drawable = castToDrawable canvas
@@ -414,42 +384,31 @@ drawCanvas canvas = do
                                   (fromIntegral w) (fromIntegral h)
                                   stElem
                                   ox oy mx my
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 newKernel :: XS ()
 newKernel = do 
   oldDoc <- stateGet skemaDoc
   let krnl = minimalKernel $ library oldDoc
       newDoc = skemaDocInsertKernel oldDoc krnl
   statePutSkemaDoc newDoc
-\end{code}
 
-\begin{code}
 deleteKernel :: SDKernelID -> XS ()
 deleteKernel idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteKernel oldDoc idx
-\end{code}
 
-\begin{code}
 updateKernel :: SDKernelID -> Kernel -> XS ()
 updateKernel idx krn = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocUpdateKernel oldDoc idx krn
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
 deleteNode :: SDNodeID -> XS ()
 deleteNode idx = do
   oldDoc <- stateGet skemaDoc
   statePutSkemaDoc $ skemaDocDeleteNode oldDoc idx
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 setupFilters :: FileChooserDialog -> IO ()
 setupFilters dialog = forM_ filters $ \(n,f) -> do
   fileFilter <- fileFilterNew
@@ -459,9 +418,6 @@ setupFilters dialog = forM_ filters $ \(n,f) -> do
     where
       filters = [("Skema Project","*.skema"), ("All","*.*")]
 
-\end{code}
-
-\begin{code}
 selectOpenFilename :: Window -> IO (Maybe FilePath)
 selectOpenFilename window = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
@@ -477,9 +433,7 @@ selectOpenFilename window = do
   case resp of
     ResponseYes -> return fileName
     _ -> return Nothing
-\end{code}
 
-\begin{code}
 selectSaveFilename :: Window -> IO (Maybe FilePath)
 selectSaveFilename window = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
@@ -496,9 +450,7 @@ selectSaveFilename window = do
   case resp of
     ResponseYes -> return fileName
     _ -> return Nothing
-\end{code}
 
-\begin{code}
 openSkemaDoc :: FilePath -> XS Bool
 openSkemaDoc filename = do
   filedat <- io $ catch 
@@ -513,14 +465,11 @@ openSkemaDoc filename = do
         statePutSkemaDoc doc 
         statePutSkemaDocFilename $ Just filename
         return True
-\end{code}
 
-\begin{code}
 saveSkemaDoc :: FilePath -> XS ()
 saveSkemaDoc filename = do
   jsonData <- fmap toJSONString $ stateGet skemaDoc
   io $ writeFile filename jsonData
   statePutSkemaDocFilename $ Just filename  
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- -----------------------------------------------------------------------------

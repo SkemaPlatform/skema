@@ -1,25 +1,23 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file is part of Skema.
+{- -----------------------------------------------------------------------------
+Copyright (C) 2011  Luis Cabellos - Instituto de Fisica de Cantabria
+This file is part of Skema.
 
-% Skema is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-%  (at your option) any later version.
+Skema is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-% Skema is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
+Skema is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-% You should have received a copy of the GNU General Public License
-% along with Skema.  If not, see <http://www.gnu.org/licenses/>.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+You should have received a copy of the GNU General Public License
+along with Skema.  If not, see <http://www.gnu.org/licenses/>.
+-- ----------------------------------------------------------------------------}
 module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 import Data.Maybe( isNothing )
 import Data.Char( isAlphaNum, isAlpha )
 import qualified Data.IntMap as MI( fromList, elems )
@@ -75,16 +73,12 @@ import Skema.SkemaDoc( Kernel(..), IOPoint(..), isInputPoint, isOutputPoint )
 import Skema.Types( openclTypeNames, IOPointType(..) )
 import Skema.Util( duplicates )
 import Paths_skema( getDataDir )
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 badColor, goodColor :: Color
 badColor = Color (229*256) (142*256) (142*256)
 goodColor = Color (180*256) (244*256) (210*256)
-\end{code}
 
-\begin{code}
 showNodeCLWindow :: Kernel -> [String] -> IO Kernel
 showNodeCLWindow krn usedNames = do
   window <- dialogNew
@@ -193,10 +187,8 @@ showNodeCLWindow krn usedNames = do
         widgetShowAll msgDlg
         _ <- dialogRun msgDlg
         widgetDestroy msgDlg
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 createKernelName :: VBox -> String -> IO Entry
 createKernelName box old = do
   hbox0 <- hBoxNew True 0
@@ -209,9 +201,7 @@ createKernelName box old = do
   boxPackStart hbox0 eName PackGrow 0
   boxPackStart box hbox0 PackNatural 0
   return eName
-\end{code}
 
-\begin{code}
 createParameters :: Dialog -> VBox -> Kernel 
                     -> IO (ListStore (String,String), ListStore (String,String))
 createParameters window box krn = do
@@ -249,9 +239,7 @@ createParameters window box krn = do
     dialogSetResponseSensitive window ResponseAccept True
     
   return (storeInputs, storeOutputs)
-\end{code}
 
-\begin{code}
 createSourceBuffer :: VBox -> String -> IO SourceBuffer
 createSourceBuffer box old = do
   -- configure language
@@ -281,10 +269,8 @@ createSourceBuffer box old = do
   containerAdd sw sourceview
   boxPackStart box sw PackGrow 0
   return sbuff
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{code}
+-- -----------------------------------------------------------------------------
 setupParameterList :: String -> TreeView -> ListStore (String,String) -> IO () 
                       -> IO ()
 setupParameterList newpre list store applyChanged = do
@@ -354,9 +340,7 @@ setupParameterList newpre list store applyChanged = do
           listStoreSetValue store idx (prefix,"float")
           _ <- listStoreAppend store ("*new*","float")
           applyChanged
-\end{code}
 
-\begin{code}
 validName :: String -> [String] -> Bool
 validName cad xs = checkLength && checkDigits 
                    && (checkInit.head) cad && cad `notElem` xs
@@ -365,6 +349,5 @@ validName cad xs = checkLength && checkDigits
     checkDigits = all checkChar cad
     checkChar c = isAlphaNum c || (c == '_')
     checkInit c = isAlpha c || (c == '_')
-\end{code}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- -----------------------------------------------------------------------------

@@ -41,7 +41,7 @@ Executable skema
   hs-source-dirs:  src
   ghc-options:     -Wall
   ghc-prof-options: -prof -auto-all
-  Main-is:         skema_main.lhs
+  Main-is:         skema_main.hs
   Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.4.0.*, skema-common==0.3.*, hgettext==0.1.*, setlocale==0.0.3
 
   if flag(coverage)
@@ -53,6 +53,6 @@ Test-Suite skema-test
   type:            exitcode-stdio-1.0
   hs-source-dirs:  src src/test
   ghc-options:     -Wall -fhpc -Werror
-  Main-is:         skema_test.lhs
+  Main-is:         skema_test.hs
   Build-Depends:   base==4.*, mtl==2.0.*, transformers==0.2.*, containers==0.4.*, json==0.4.*, QuickCheck >= 2, cairo==0.12.*, glib==0.12.*, gtk==0.12.*, glade==0.12.*, gtksourceview2==0.12.*, skema-common==0.3.*, aeson==0.4.0.*
   cpp-options:   -DTESTING
