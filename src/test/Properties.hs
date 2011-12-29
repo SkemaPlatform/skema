@@ -47,9 +47,6 @@ instance Arbitrary Pos2D where
 prop_pos2d_signum :: Pos2D -> Bool
 prop_pos2d_signum pos = abs pos * signum pos == pos
 
-prop_pos2d_sum :: Pos2D -> Pos2D -> Bool
-prop_pos2d_sum pa pb  = pa + pb == pb - pa
-
 -- -----------------------------------------------------------------------------
 -- Skema.Editor.Types
 
@@ -61,7 +58,6 @@ prop_inside_circle_center pc rad = rad <= 0
 tests :: [(String, IO Result)]
 tests = [
   ("Skema.Util: pos2D signum", quickCheckResult prop_pos2d_signum),
-  ("Skema.Util: pos2D sum", quickCheckResult prop_pos2d_sum),
   ("Skema.Editor.Types: Area Circle center", quickCheckResult prop_inside_circle_center)
  ]
 
