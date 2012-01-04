@@ -22,7 +22,7 @@ import Control.Monad( when, forM_ )
 import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
-import qualified Data.IntMap as M( keys, insert, elems )
+import qualified Data.IntMap as MI( keys, insert, elems )
 import qualified Data.Map as M( size )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
@@ -248,7 +248,7 @@ editKernel canvas state tree kernels = do
   when (isJust iter) $ do
     (i,k) <- listStoreGetValue kernels (listStoreIterToIndex . fromJust $ iter)
     usedNames <- withMVar state 
-                 $ return . filter (/= name k) . map name . M.elems . library . skemaDoc
+                 $ return . filter (/= name k) . map name . MI.elems . library . skemaDoc
     newk <- showNodeCLWindow k usedNames
     when (newk /= k) $ do 
       modifyMVar_ state $ \sks -> do
@@ -274,7 +274,7 @@ setupKernelsView view model = do
   treeViewColumnSetTitle col2 "In"
   treeViewColumnPackStart col2 renderer2 True
   cellLayoutSetAttributes col2 renderer2 model $ \(_,r) -> [ 
-    cellText := show . length . filter ((==InputPoint) . iopType) . M.elems $ iopoints r ]
+    cellText := show . length . filter ((==InputPoint) . iopType) . MI.elems $ iopoints r ]
   _ <- treeViewAppendColumn view col2
 
   col3 <- treeViewColumnNew
@@ -282,7 +282,7 @@ setupKernelsView view model = do
   treeViewColumnSetTitle col3 "Out"
   treeViewColumnPackStart col3 renderer3 True
   cellLayoutSetAttributes col3 renderer3 model $ \(_,r) -> [ 
-    cellText := show . length . filter ((==OutputPoint) . iopType) . M.elems $ iopoints r ]
+    cellText := show . length . filter ((==OutputPoint) . iopType) . MI.elems $ iopoints r ]
   _ <- treeViewAppendColumn view col3
 
   col4 <- treeViewColumnNew
@@ -330,11 +330,11 @@ insertElement idx mx my canvas = do
 insertNewNode :: SDKernelID -> Double -> Double -> XS ()
 insertNewNode idx x y = do
   oldDoc <- stateGet skemaDoc
-  let keys = M.keys.nodes $ oldDoc
+  let keys = MI.keys.nodes $ oldDoc
       last_i = if null keys then 0 else maximum keys + 1
       new_node = NodeKernel (Pos2D (x,y)) idx
   statePutSkemaDoc $ oldDoc { 
-                         nodes = M.insert last_i new_node $ nodes oldDoc}
+                         nodes = MI.insert last_i new_node $ nodes oldDoc}
 
 showElementMenu :: SelectedElement -> XS (Maybe SDNodeID)
 showElementMenu (SeNODE k) = return $ Just k
