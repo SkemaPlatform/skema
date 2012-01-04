@@ -40,15 +40,16 @@ import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
   IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, 
   filter )
-import qualified Data.Map as M( fromList, empty )
+import qualified Data.Map as M( Map, fromList, empty )
 import Data.Aeson( 
-  Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:) )
+  Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:), (.:?), (.!=) )
 import Data.Aeson.Types( typeMismatch )
 import Skema.Editor.Types( 
   Pos2D(..), RGBColor, Rect(..), Circle(..), inside, posx, posy )
 import Skema.Types( IOPointType(..), IOPointDataType(..), isSameBaseType )
 import Skema.ProgramFlow( 
   ProgramFlow(..), PFKernel(..), PFNode(..), PFIOPoint(..), PFArrow(..), 
+  PFConstBuffer(..),
   emptyProgramFlow )
 import Skema.Util( isAcyclicGraph )
 import Skema.SIDMap( 
@@ -130,16 +131,18 @@ isOutputPoint :: IOPoint -> Bool
 isOutputPoint = (==OutputPoint) . iopType
 
 -- -----------------------------------------------------------------------------
-data Kernel = Kernel{ 
-  name :: String, 
-  body :: String, 
-  iopoints :: MI.IntMap IOPoint,
-  workItems :: Maybe Int
+data Kernel = Kernel
+              { name :: String
+              , body :: String
+              , iopoints :: MI.IntMap IOPoint
+              , constBuffers :: M.Map String IOPointDataType
+                -- ^ list of const buffers
+              , workItems :: Maybe Int
   }
             deriving( Show, Eq )
 
 emptyKernel :: Kernel
-emptyKernel = Kernel "" "" MI.empty Nothing
+emptyKernel = Kernel "" "" MI.empty M.empty Nothing
 
 minimalKernel :: SIDMap Kernel -> Kernel
 minimalKernel kns = emptyKernel { 
@@ -396,9 +399,10 @@ extractProgramFlow skdoc = emptyProgramFlow
       darrows = mapMaybe (toPFArrow skdoc) . arrows $ skdoc
 
 toPFKernel :: Kernel -> PFKernel
-toPFKernel kernel = PFKernel (body kernel) kios M.empty (workItems kernel)
+toPFKernel kernel = PFKernel (body kernel) kios kcst (workItems kernel)
     where
       kios = M.fromList . map (iopName &&& toPFIOPoint) . MI.elems . iopoints $ kernel
+      kcst = fmap PFConstBuffer $ constBuffers kernel
 
 toPFNode :: MI.IntMap Kernel -> Node -> Maybe PFNode
 toPFNode kernels node = do
@@ -440,13 +444,15 @@ instance ToJSON Kernel where
     "kernelName" .= name krn, 
     "kernelBody" .= body krn,
     "kernelIO" .= iopoints krn,
-    "kernelWorkItems" .= workItems krn]
+    "kernelWorkItems" .= workItems krn, 
+    "kernelConst" .= constBuffers krn ]
 
 instance FromJSON Kernel where
   parseJSON (Object v) = Kernel <$>
                          v .: "kernelName" <*>
                          v .: "kernelBody" <*>
                          v .: "kernelIO" <*>
+                         (v .:? "kernelConst" .!= M.empty) <*>
                          v .: "kernelWorkItems"
   parseJSON v = typeMismatch "Kernel" v
 
