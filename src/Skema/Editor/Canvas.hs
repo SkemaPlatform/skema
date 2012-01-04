@@ -28,13 +28,15 @@ import qualified Graphics.Rendering.Cairo as Cr(
 import Skema.SkemaDoc( 
   SDKernelID, SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, 
   SelectedElement(..), nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, 
-  nodeHeadHeight, nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, 
-  arrowPosition, nodeIOPPosition, isInputPoint, iopName, iopDataType )
+  nodeHeadHeight, nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints,
+  nodeConstBuffers, arrowPosition, nodeIOPPosition, nodeConstPosition, 
+  isInputPoint, iopName, iopDataType )
 import Skema.Math( deg2rad )
 import Skema.Editor.Types( Pos2D(..), RGBColor, posx, posy )
 import Skema.Editor.Util( 
   roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn, 
   calcFontHeight, drawLine )
+import Skema.Types( IOPointDataType(..) )
 
 -- -----------------------------------------------------------------------------
 class ElemColor a where
@@ -49,6 +51,9 @@ instance ElemColor IOPoint where
     fillColor point
         | isInputPoint point = (0.78,0.78,0.16)
         | otherwise = (0.16,0.78,0.78)
+
+instance ElemColor IOPointDataType where
+    fillColor = const (0.78,0.16,0.78)
 
 -- -----------------------------------------------------------------------------
 drawSkemaDoc :: Double -> Double -> SkemaDoc -> Maybe SDKernelID -> Cr.Render ()
@@ -117,6 +122,7 @@ drawVisualNode skdoc node = do
   Cr.setFontSize 8
   mapM_ (drawIOPoint node) (zip [0..] $ nodeInputPoints skdoc node)
   mapM_ (drawIOPoint node) (zip [0..] $ nodeOutputPoints skdoc node)
+  mapM_ (drawConstBuffer node) (zip [0..] $ nodeConstBuffers skdoc node)
 
 drawIOPoint :: Node -> (Int, IOPoint) -> Cr.Render ()
 drawIOPoint node (ipos,point) = do
@@ -135,6 +141,14 @@ drawIOPoint node (ipos,point) = do
       textWidth <- liftM Cr.textExtentsWidth $ Cr.textExtents name
       showTextOn (px-textWidth-pointRad-1) (py+fontHeight*0.5) name
 
+drawConstBuffer :: Node -> (Int, (String, IOPointDataType)) -> Cr.Render ()
+drawConstBuffer node (ipos,(_,buffType)) = do
+  let pointRad = nodePointRad node
+      Pos2D (px,py) = nodeConstPosition node ipos
+  circlePath px py pointRad
+  drawFillStroke  (fillColor buffType) (lineColor buffType)
+  return ()
+  
 drawSelected :: Double -> Double -> Maybe SelectedElement 
                 -> Double -> Double -> Double -> Double -> Cr.Render ()
 drawSelected _ _ Nothing _ _ _ _ = return ()

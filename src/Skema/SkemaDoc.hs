@@ -20,15 +20,18 @@ module Skema.SkemaDoc(
   -- Types
   SDKernelID, SDNodeID, SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), 
   SelectedElement(..), IOPoint(..), 
-  -- Functions
+  -- SkemaDoc Functions
+  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode,   
+  skemaDocGetKernelsAssocs, skemaDocGetNodesAssocs, 
+  skemaDocSetNodesAssocs, skemaDocInsertKernel,
+  -- Node Functions
   nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, nodeHeadHeight,
-  nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, arrowPosition,
-  nodeIOPPosition, nodeKernel, findInputArrow, deleteArrow,
-  selectNodeElement, insertNewArrow, emptySkemaDoc, extractProgramFlow, 
-  isOutputPoint, isIOPoint, isInputPoint, nodeTranslate, skemaDocInsertKernel,
-  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, minimalKernel,
-  arrowIOPointType, skemaDocGetKernelsAssocs, skemaDocGetNodesAssocs, 
-  skemaDocSetNodesAssocs
+  nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints, nodeConstBuffers,
+  nodeIOPPosition, nodeConstPosition, nodeKernel, nodeTranslate, 
+  -- Other Functions
+  arrowPosition, findInputArrow, deleteArrow, selectNodeElement, insertNewArrow, 
+  emptySkemaDoc, extractProgramFlow, isOutputPoint, isIOPoint, isInputPoint, 
+  minimalKernel, arrowIOPointType,
   ) where
 
 -- -----------------------------------------------------------------------------
@@ -40,7 +43,7 @@ import Control.Arrow( (&&&), second )
 import qualified Data.IntMap as MI( 
   IntMap, empty, lookup, elems, assocs, fromList, insert, keys, delete, 
   filter )
-import qualified Data.Map as M( Map, fromList, empty )
+import qualified Data.Map as M( Map, fromList, assocs, empty )
 import Data.Aeson( 
   Value(..), FromJSON(..), ToJSON(..), object, (.=), (.:), (.:?), (.!=) )
 import Data.Aeson.Types( typeMismatch )
@@ -105,6 +108,13 @@ nodeOutputPosition node idx = Pos2D (px,py)
       idxOffset = fromIntegral idx *2*(nodePointRad node + 1)
       px = nodePosx node + nodeWidth node
       py = nodePosy node + nodeHeadHeight node + 10 + idxOffset
+
+nodeConstPosition :: Node -> Int -> Pos2D
+nodeConstPosition node idx = Pos2D (px,py)
+    where
+      idxOffset = fromIntegral idx *2*(nodePointRad node)
+      px = nodePosx node + 20 + idxOffset
+      py = nodePosy node + nodeHeight node
 
 nodeHeadHeight :: Node -> Double
 nodeHeadHeight = const 12
@@ -281,6 +291,11 @@ nodeInputPoints skdoc = filter isInputPoint . nodeIOPoints skdoc
 
 nodeOutputPoints :: SkemaDoc -> Node -> [IOPoint]
 nodeOutputPoints skdoc = filter (not.isInputPoint) . nodeIOPoints skdoc
+
+nodeConstBuffers :: SkemaDoc -> Node -> [(String, IOPointDataType)]
+nodeConstBuffers skdoc node = maybe [] (M.assocs . constBuffers) maybeKernel
+  where
+    maybeKernel = sidMapLookup (kernelIdx node) (library skdoc)     
 
 nodeKernel :: SkemaDoc -> Node -> Maybe Kernel
 nodeKernel skdoc node = sidMapLookup (kernelIdx node) $ library skdoc
