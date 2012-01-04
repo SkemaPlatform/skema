@@ -23,6 +23,7 @@ import Control.Monad.Trans( liftIO )
 import Control.Concurrent.MVar( 
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
 import qualified Data.IntMap as M( keys, insert, elems )
+import qualified Data.Map as M( size )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
 import Graphics.UI.Gtk( 
@@ -284,6 +285,14 @@ setupKernelsView view model = do
     cellText := show . length . filter ((==OutputPoint) . iopType) . M.elems $ iopoints r ]
   _ <- treeViewAppendColumn view col3
 
+  col4 <- treeViewColumnNew
+  renderer4 <- cellRendererTextNew
+  treeViewColumnSetTitle col4 "Cbuf"
+  treeViewColumnPackStart col4 renderer4 True
+  cellLayoutSetAttributes col4 renderer4 model $ \(_,r) -> [ 
+    cellText := show . M.size $ constBuffers r ]
+  _ <- treeViewAppendColumn view col4
+  
   return ()
 
 clearKernelList :: ListStore (SDKernelID,Kernel) -> SkemaState -> IO SkemaState
