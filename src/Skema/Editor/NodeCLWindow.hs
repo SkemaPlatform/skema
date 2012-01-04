@@ -21,6 +21,7 @@ module Skema.Editor.NodeCLWindow( showNodeCLWindow ) where
 import Data.Maybe( isNothing )
 import Data.Char( isAlphaNum, isAlpha )
 import qualified Data.IntMap as MI( fromList, elems )
+import qualified Data.Map as M( fromList, assocs )
 import Control.Monad( when, unless )
 import Control.Arrow( (&&&) )
 import System.Glib.Attributes( AttrOp(..) )
@@ -88,7 +89,7 @@ showNodeCLWindow krn usedNames = do
   
   -- create widgets
   eName <- createKernelName internal (name krn)
-  (storeInputs, storeOutputs) <- createParameters window internal krn
+  (stInputs, stOutputs, stConsts ) <- createParameters window internal krn
   
   hbox <- hBoxNew True 0
   tick <- checkButtonNewWithLabel "Fixed Work Items:"
@@ -148,14 +149,16 @@ showNodeCLWindow krn usedNames = do
         errorMsg (Just . toWindow $ window) 
         "Invalid Kernel Name. Using old one."
         
-      ins <- fmap init $ listStoreToList storeInputs
-      outs <- fmap init $ listStoreToList storeOutputs      
-      let paramNames = map fst $ ins ++ outs
+      ins <- fmap init $ listStoreToList stInputs
+      outs <- fmap init $ listStoreToList stOutputs
+      cbs <- fmap init $ listStoreToList stConsts
+      let paramNames = map fst $ ins ++ outs ++ cbs
           dups = duplicates paramNames
           validParams = null dups && all (`validName` []) paramNames
           inPoints = map (\(n,t) -> IOPoint n (read t) InputPoint) ins
           outPoints = map (\(n,t) -> IOPoint n (read t) OutputPoint) outs
           newPoints = MI.fromList . zip [0..] $ inPoints ++ outPoints
+          consts = fmap read $ M.fromList cbs
       
       activeWI <- toggleButtonGetActive tick
       newWorkItems <- spinButtonGetValueAsInt nWorkItems
@@ -171,6 +174,9 @@ showNodeCLWindow krn usedNames = do
                    iopoints = if validParams
                               then newPoints
                               else iopoints krn,
+                   constBuffers = if validParams
+                                then consts
+                                else constBuffers krn,
                    workItems = if activeWI
                                then (Just newWorkItems)
                                else Nothing
@@ -203,7 +209,9 @@ createKernelName box old = do
   return eName
 
 createParameters :: Dialog -> VBox -> Kernel 
-                    -> IO (ListStore (String,String), ListStore (String,String))
+                    -> IO ( ListStore (String,String)
+                          , ListStore (String,String)
+                          , ListStore (String,String))
 createParameters window box krn = do
   hbox1 <- hBoxNew True 0  
   boxPackStart box hbox1 PackNatural 0
@@ -220,7 +228,7 @@ createParameters window box krn = do
   storeInputs <- listStoreNew krnIns
   boxPackStart vboxInput inputList PackNatural 0
   
-  setupParameterList "inp" inputList storeInputs $ 
+  setupParameterList "inp" 2 inputList storeInputs $ 
     dialogSetResponseSensitive window ResponseAccept True
   
   -- output widgets
@@ -235,10 +243,24 @@ createParameters window box krn = do
   storeOutputs <- listStoreNew krnOuts
   boxPackStart vboxOutput outputList PackNatural 0
   
-  setupParameterList "outp" outputList storeOutputs $ 
+  setupParameterList "outp" 2 outputList storeOutputs $ 
     dialogSetResponseSensitive window ResponseAccept True
     
-  return (storeInputs, storeOutputs)
+  -- const widgets
+  vboxConst <- vBoxNew False 0
+  boxPackStart hbox1 vboxConst PackNatural 0
+  lbl2 <- labelNew $ Just "Const Buffers"
+  boxPackStart vboxConst lbl2 PackNatural 0
+    
+  let krnConsts = M.assocs . fmap show $ constBuffers krn
+  constList <- treeViewNew
+  storeConsts <- listStoreNew krnConsts
+  boxPackStart vboxConst constList PackNatural 0
+      
+  setupParameterList "cbuff" 1 constList storeConsts $
+    dialogSetResponseSensitive window ResponseAccept True
+    
+  return (storeInputs, storeOutputs, storeConsts)
 
 createSourceBuffer :: VBox -> String -> IO SourceBuffer
 createSourceBuffer box old = do
@@ -271,9 +293,9 @@ createSourceBuffer box old = do
   return sbuff
 
 -- -----------------------------------------------------------------------------
-setupParameterList :: String -> TreeView -> ListStore (String,String) -> IO () 
-                      -> IO ()
-setupParameterList newpre list store applyChanged = do
+setupParameterList :: String -> Int -> TreeView -> ListStore (String,String) 
+                      -> IO () -> IO ()
+setupParameterList newpre minpars list store applyChanged = do
   treeViewSetModel list store
   treeViewSetHeadersVisible list True
   
@@ -323,7 +345,7 @@ setupParameterList newpre list store applyChanged = do
   _ <- treeViewAppendColumn list col3
   _ <- renderer3 `on` cellToggled $ \path -> do
     npars <- listStoreGetSize store
-    when (npars > 2) $ do
+    when (npars > minpars) $ do
       let treepath = stringToTreePath path
       unless (null treepath) $ do
         let idx = head treepath
