@@ -144,6 +144,7 @@ isOutputPoint = (==OutputPoint) . iopType
 data Kernel = Kernel
               { name :: String
               , body :: String
+              , extra :: String
               , iopoints :: MI.IntMap IOPoint
               , constBuffers :: M.Map String IOPointDataType
                 -- ^ list of const buffers
@@ -152,11 +153,12 @@ data Kernel = Kernel
             deriving( Show, Eq )
 
 emptyKernel :: Kernel
-emptyKernel = Kernel "" "" MI.empty M.empty Nothing
+emptyKernel = Kernel "" "" "" MI.empty M.empty Nothing
 
 minimalKernel :: SIDMap Kernel -> Kernel
 minimalKernel kns = emptyKernel { 
   body="int id = get_global_id(0);\n",
+  extra="",
   name=newName,
   iopoints=MI.fromList $ zip [0..] 
            [IOPoint "x" IOfloat InputPoint, 
@@ -414,7 +416,8 @@ extractProgramFlow skdoc = emptyProgramFlow
       darrows = mapMaybe (toPFArrow skdoc) . arrows $ skdoc
 
 toPFKernel :: Kernel -> PFKernel
-toPFKernel kernel = PFKernel (body kernel) kios kcst (workItems kernel)
+toPFKernel kernel = PFKernel (body kernel) (extra kernel) 
+                    kios kcst (workItems kernel)
     where
       kios = M.fromList . map (iopName &&& toPFIOPoint) . MI.elems . iopoints $ kernel
       kcst = fmap PFConstBuffer $ constBuffers kernel
@@ -458,6 +461,7 @@ instance ToJSON Kernel where
   toJSON krn = object [
     "kernelName" .= name krn, 
     "kernelBody" .= body krn,
+    "kernelExtra" .= extra krn,
     "kernelIO" .= iopoints krn,
     "kernelWorkItems" .= workItems krn, 
     "kernelConst" .= constBuffers krn ]
@@ -466,6 +470,7 @@ instance FromJSON Kernel where
   parseJSON (Object v) = Kernel <$>
                          v .: "kernelName" <*>
                          v .: "kernelBody" <*>
+                         (v .:? "kernelExtra" .!= "") <*>
                          v .: "kernelIO" <*>
                          (v .:? "kernelConst" .!= M.empty) <*>
                          v .: "kernelWorkItems"
