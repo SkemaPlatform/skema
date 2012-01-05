@@ -107,7 +107,8 @@ showNodeCLWindow krn usedNames = do
   boxPackStart hbox nWorkItems PackNatural 0  
   boxPackStart internal hbox PackNatural 0
 
-  sbuff <- createSourceBuffer internal (body krn)
+  sbuff <- createSourceBuffer internal "Kernel Body" (body krn)
+  sbuffExtra <- createSourceBuffer internal "Extra Code" (extra krn)
   
   -- buttons
   acceptButton <- dialogAddButton window stockApply ResponseAccept
@@ -130,6 +131,9 @@ showNodeCLWindow krn usedNames = do
   _ <- sbuff `on` bufferChanged $
     dialogSetResponseSensitive window ResponseAccept True
     
+  _ <- sbuffExtra `on` bufferChanged $
+    dialogSetResponseSensitive window ResponseAccept True
+    
   _ <- tick `on` toggled $ do
     dialogSetResponseSensitive window ResponseAccept True
     active <- toggleButtonGetActive tick
@@ -143,6 +147,7 @@ showNodeCLWindow krn usedNames = do
   newkrn <- case resp of
     ResponseAccept -> do
       newBody <- get sbuff textBufferText
+      newExtra <- get sbuffExtra textBufferText
       newName <- get eName entryText      
       
       unless (validName newName usedNames) $
@@ -168,6 +173,7 @@ showNodeCLWindow krn usedNames = do
         "Invalid Parameters Names. Using old ones."
         
       return krn { body = newBody, 
+                   extra = newExtra,
                    name = if validName newName usedNames
                           then newName 
                           else name krn,
@@ -262,8 +268,8 @@ createParameters window box krn = do
     
   return (storeInputs, storeOutputs, storeConsts)
 
-createSourceBuffer :: VBox -> String -> IO SourceBuffer
-createSourceBuffer box old = do
+createSourceBuffer :: VBox -> String -> String -> IO SourceBuffer
+createSourceBuffer box bname old = do
   -- configure language
   datadir <- getDataDir
   
@@ -277,7 +283,7 @@ createSourceBuffer box old = do
   ssty <- sourceStyleSchemeManagerGetScheme slsty "classic"
   
   -- create Source Input Widget
-  lbl2 <- labelNew $ Just "Kernel Body"
+  lbl2 <- labelNew $ Just bname
   boxPackStart box lbl2 PackNatural 0
   sbuff <- sourceBufferNew Nothing
   sourceBufferSetLanguage sbuff slang
