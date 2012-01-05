@@ -86,7 +86,6 @@ showTestProgramWindow pf = do
           forM_ (zip outents dvals) $ \(entries,vals) -> do
             forM_ (zip entries vals) (uncurry putOnSpin)
       )
-    print "test Ended"
     
   -- buttons
   okButton <- dialogAddButton window stockOk ResponseAccept
@@ -154,6 +153,7 @@ createEntry b IOuint = configureIntEntry b DVuint (bounds::(Word32,Word32))
 createEntry b IOlong = configureIntEntry b DVlong (bounds::(Int64,Int64))
 createEntry b IOulong = configureIntEntry b DVulong (bounds::(Word64,Word64))
 createEntry b IOfloat = configureEntry b DVfloat (-1e50) 1e50 0.01 2
+createEntry b IOdouble = configureEntry b DVdouble (-1e50) 1e50 0.01 2
 
 createEntry b t = createNEntries b (dataTypeBase t) (dataTypeVectorSize t)
 
