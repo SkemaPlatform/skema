@@ -25,13 +25,13 @@ import qualified Graphics.Rendering.Cairo as Cr(
   Render, FontSlant(..), FontWeight(..), setSourceRGB, setSourceRGBA, 
   setLineWidth, setFontSize, lineTo, newPath, closePath, arc, moveTo, 
   selectFontFace, fill, paint, textExtents, textExtentsWidth, curveTo, setDash )
-import Skema.SkemaDoc( 
+import Skema.Math( deg2rad )
+import Skema.Editor.SkemaDoc( 
   SDKernelID, SkemaDoc(..), NodeArrow(..), Node(..), IOPoint, 
   SelectedElement(..), nodePosx, nodePosy, nodeHeight, nodeWidth, nodePointRad, 
   nodeHeadHeight, nodeHeadColor, nodeName, nodeInputPoints, nodeOutputPoints,
   nodeConstBuffers, arrowPosition, nodeIOPPosition, nodeConstPosition, 
   isInputPoint, iopName, iopDataType )
-import Skema.Math( deg2rad )
 import Skema.Editor.Types( Pos2D(..), RGBColor, posx, posy )
 import Skema.Editor.Util( 
   roundedRectanglePath, circlePath, drawFill, drawFillStroke, showTextOn, 

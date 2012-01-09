@@ -26,7 +26,7 @@ import System.Locale.SetLocale( Category(..), setLocale )
 import Text.I18N.GetText( bindTextDomain, textDomain, getText )
 import Paths_skema( getDataFileName, version )
 import Skema.Editor.SkemaState( SkemaState(..), emptySkemaState )
-import Skema.SkemaDoc( emptySkemaDoc )
+import Skema.Editor.SkemaDoc( emptySkemaDoc )
 import Skema.Editor.MainWindow( prepareMainWindow )
 
 -- -----------------------------------------------------------------------------

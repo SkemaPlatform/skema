@@ -70,7 +70,8 @@ import Graphics.UI.Gtk.SourceView(
   sourceBufferSetStyleScheme, sourceBufferSetHighlightSyntax, 
   sourceViewNewWithBuffer, sourceBufferBeginNotUndoableAction, 
   sourceBufferEndNotUndoableAction )
-import Skema.SkemaDoc( Kernel(..), IOPoint(..), isInputPoint, isOutputPoint )
+import Skema.Editor.SkemaDoc( 
+  Kernel(..), IOPoint(..), isInputPoint, isOutputPoint )
 import Skema.Types( openclTypeNames, IOPointType(..) )
 import Skema.Util( duplicates )
 import Paths_skema( getDataDir )

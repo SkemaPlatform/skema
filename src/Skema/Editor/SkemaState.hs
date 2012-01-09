@@ -29,7 +29,7 @@ import Control.Monad.IO.Class( MonadIO(..) )
 import Control.Monad.State( MonadState, StateT(..), get, put )
 import System.IO( hPutStrLn, stderr )
 import Skema.Editor.Types( Pos2D(..) )
-import Skema.SkemaDoc( 
+import Skema.Editor.SkemaDoc( 
   SDKernelID, SDNodeID, SkemaDoc(..), SelectedElement(..), nodeKernel, 
   selectNodeElement, insertNewArrow, emptySkemaDoc, skemaDocGetNodesAssocs )
 

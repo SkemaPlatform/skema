@@ -37,7 +37,7 @@ import Graphics.UI.Gtk.Selectors.FileChooser(
 import Graphics.UI.Gtk.Selectors.FileChooserDialog( fileChooserDialogNew )
 import Paths_skema( getDataFileName )
 import Skema.Editor.SkemaState( SkemaState(..) )
-import Skema.SkemaDoc( extractProgramFlow )
+import Skema.Editor.SkemaDoc( extractProgramFlow )
 import Skema.ProgramFlow( generateJSONString )
 import Skema.JSON( prettyJSON )
 

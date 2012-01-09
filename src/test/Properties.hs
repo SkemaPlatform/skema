@@ -23,7 +23,7 @@ import Test.QuickCheck( Arbitrary(..), quickCheckResult, arbitrarySizedIntegral 
 import Test.QuickCheck.Test( Result, isSuccess )
 import Text.Printf( printf )
 import System.Exit( exitSuccess, exitFailure )
-import Skema.SkemaDoc()
+import Skema.Editor.SkemaDoc()
 import Skema.Editor.Util()
 import Skema.Editor.MainWindow()
 import Skema.Editor.NodeCLWindow()

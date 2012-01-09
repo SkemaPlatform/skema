@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with Skema.  If not, see <http://www.gnu.org/licenses/>.
 -- ----------------------------------------------------------------------------}
 {-# LANGUAGE OverloadedStrings #-}
-module Skema.SkemaDoc( 
+module Skema.Editor.SkemaDoc( 
   -- Types
   SDKernelID, SDNodeID, SkemaDoc(..), NodeArrow(..), Kernel(..), Node(..), 
   SelectedElement(..), IOPoint(..), 

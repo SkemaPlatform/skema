@@ -71,7 +71,7 @@ import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.TestProgramWindow( showTestProgramWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
-import Skema.SkemaDoc( 
+import Skema.Editor.SkemaDoc( 
   SDKernelID, SDNodeID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
   IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, 
   deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel, 

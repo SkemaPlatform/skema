@@ -28,7 +28,7 @@ Library
   ghc-options:     -Wall
   Build-Depends:   base==4.3.*, mtl==2.0.1.*, transformers==0.2.*, containers==0.4.0.*, json==0.4.*, cairo==0.12.*, gtk==0.12.*, glade==0.12.*, glib==0.12.*, gtksourceview2==0.12.*, aeson==0.4.0.*, skema-common==0.3.*
   Exposed-modules: 
-    Skema.SkemaDoc
+    Skema.Editor.SkemaDoc
     Skema.Editor.Canvas
     Skema.Editor.MainWindow
     Skema.Editor.Util
