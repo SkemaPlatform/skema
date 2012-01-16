@@ -20,63 +20,64 @@ module Skema.Editor.MainWindow( prepareMainWindow ) where
 -- -----------------------------------------------------------------------------
 import Control.Monad( when, forM_ )
 import Control.Monad.Trans( liftIO )
-import Control.Concurrent.MVar( 
+import Control.Concurrent.MVar(
   MVar, readMVar, modifyMVar_, modifyMVar, withMVar )
 import qualified Data.IntMap as MI( keys, insert, elems )
 import qualified Data.Map as M( size )
 import Data.Maybe( isNothing, isJust, fromJust )
 import System.Glib.Attributes( AttrOp(..) )
-import Graphics.UI.Gtk( 
+import Graphics.UI.Gtk(
   on, renderWithDrawable, eventWindow, castToDrawable, drawableGetSize,
   DrawWindow, DrawingArea, widgetShowAll, mainQuit )
-import Graphics.UI.Gtk.Abstract.Widget( 
-  widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent, 
+import Graphics.UI.Gtk.Abstract.Widget(
+  widgetAddEvents, exposeEvent, buttonPressEvent, buttonReleaseEvent,
   motionNotifyEvent, widgetQueueDraw, EventMask(..), widgetDestroy )
-import Graphics.UI.Gtk.Display.Statusbar( 
+import Graphics.UI.Gtk.Display.Statusbar(
   castToStatusbar, statusbarGetContextId, statusbarPush )
-import Graphics.UI.Gtk.Gdk.EventM( 
-  tryEvent, eventButton, eventClick, eventCoordinates, MouseButton(..), 
+import Graphics.UI.Gtk.Gdk.EventM(
+  tryEvent, eventButton, eventClick, eventCoordinates, MouseButton(..),
   Click(..) )
 import Graphics.UI.Gtk.General.StockItems( stockCancel, stockOpen, stockSave )
 import Graphics.UI.Gtk.Glade( GladeXML, xmlGetWidget )
-import Graphics.UI.Gtk.MenuComboToolbar.ToolButton( 
+import Graphics.UI.Gtk.MenuComboToolbar.ToolButton(
   castToToolButton, onToolButtonClicked )
-import Graphics.UI.Gtk.MenuComboToolbar.MenuItem( 
+import Graphics.UI.Gtk.MenuComboToolbar.MenuItem(
   castToMenuItem, menuItemNewWithLabel, menuItemActivate )
 import Graphics.UI.Gtk.MenuComboToolbar.MenuShell( menuShellAppend )
 import Graphics.UI.Gtk.MenuComboToolbar.Menu(
   menuNew, menuPopup, menuSetTitle )
 import Graphics.UI.Gtk.Misc.DrawingArea( castToDrawingArea )
-import Graphics.UI.Gtk.ModelView( 
-  ListStore, listStoreNew, listStoreClear, listStoreAppend, listStoreGetValue, 
-  listStoreIterToIndex, TreeView, TreeIter, castToTreeView, 
-  treeViewSetHeadersVisible, treeViewAppendColumn, treeViewSetModel, 
-  cursorChanged, treeViewGetCursor, treeViewExpandAll, cellText, 
-  cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew, 
+import Graphics.UI.Gtk.ModelView(
+  ListStore, listStoreNew, listStoreClear, listStoreAppend, listStoreGetValue,
+  listStoreIterToIndex, TreeView, TreeIter, castToTreeView,
+  treeViewSetHeadersVisible, treeViewAppendColumn, treeViewSetModel,
+  cursorChanged, treeViewGetCursor, treeViewExpandAll, cellText,
+  cellRendererTextNew, cellLayoutSetAttributes, treeViewColumnNew,
   treeViewColumnSetTitle, treeViewColumnPackStart, treeModelGetIter )
-import Graphics.UI.Gtk.Selectors.FileFilter( 
+import Graphics.UI.Gtk.Selectors.FileFilter(
   fileFilterNew, fileFilterAddPattern, fileFilterSetName )
-import Graphics.UI.Gtk.Selectors.FileChooser( 
-  FileChooserAction(..), fileChooserSetDoOverwriteConfirmation, 
+import Graphics.UI.Gtk.Selectors.FileChooser(
+  FileChooserAction(..), fileChooserSetDoOverwriteConfirmation,
   fileChooserGetFilename, fileChooserAddFilter )
-import Graphics.UI.Gtk.Selectors.FileChooserDialog( 
+import Graphics.UI.Gtk.Selectors.FileChooserDialog(
   FileChooserDialog, fileChooserDialogNew )
 import Graphics.UI.Gtk.Windows.Dialog( ResponseId(..), dialogRun )
 import Graphics.UI.Gtk.Windows.Window( Window, castToWindow, toWindow )
-import Skema.Editor.SkemaState( 
-  SkemaState(..), XS(..), io, runXS, statePutSelectedPos, statePutSelectedPos2, 
-  statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement, 
+import Skema.Editor.SkemaState(
+  SkemaState(..), XS(..), io, runXS, statePutSelectedPos, statePutSelectedPos2,
+  statePutSelectedElem, statePutSkemaDoc, stateGet, stateSelectElement,
   stateInsertNewArrow, statePutSkemaDocFilename )
 import Skema.Editor.Canvas( drawSkemaDoc, drawSelected )
 import Skema.Editor.PFPreviewWindow( showPFPreviewWindow )
 import Skema.Editor.TestProgramWindow( showTestProgramWindow )
 import Skema.Editor.NodeCLWindow( showNodeCLWindow )
-import Skema.Editor.SkemaDoc( 
-  SDKernelID, SDNodeID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..), 
-  IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow, 
-  deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel, 
-  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode, 
+import Skema.Editor.SkemaDoc(
+  SDKernelID, SDNodeID, SkemaDoc(..), Node(..), Kernel(..), SelectedElement(..),
+  IOPoint(..), nodeTranslate, isIOPoint, arrowIOPointType, findInputArrow,
+  deleteArrow, minimalKernel, skemaDocGetKernelsAssocs, skemaDocInsertKernel,
+  skemaDocDeleteKernel, skemaDocUpdateKernel, skemaDocDeleteNode,
   skemaDocGetNodesAssocs, skemaDocSetNodesAssocs, extractProgramFlow )
+import Skema.GraphvizDot( toGraphvizDot )
 import Skema.Types( IOPointType(..) )
 import Skema.Util( toJSONString, fromJSONString )
 import Skema.Editor.Types( Pos2D(..) )
@@ -85,7 +86,7 @@ import Skema.Editor.Types( Pos2D(..) )
 prepareMainWindow :: GladeXML -> MVar SkemaState -> IO ()
 prepareMainWindow xml state = do
   canvas <- xmlGetWidget xml castToDrawingArea "canvas"
-  
+
   widgetAddEvents canvas [Button1MotionMask]
 
   skdoc <- fmap skemaDoc $ readMVar state
@@ -118,7 +119,7 @@ prepareMainWindow xml state = do
     SingleClick <- eventClick
     (mx,my) <- eventCoordinates
     iter <- liftIO $ getTreeIter ktree storeKernels
-    when (isJust iter) . liftIO $ do 
+    when (isJust iter) . liftIO $ do
       maybeNode <- modifyMVar state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
         (node,new_sks) <- runXS sks $ insertElement i mx my canvas
@@ -131,14 +132,14 @@ prepareMainWindow xml state = do
         item1 <- menuItemNewWithLabel "Delete"
         menuShellAppend menu item1
         menuPopup menu Nothing
-        
+
         _ <- item1 `on` menuItemActivate $ do
           modifyMVar_ state $ \sks -> do
             (_,new_sks) <- runXS sks $ deleteNode nodeIdx
             return new_sks
           widgetQueueDraw canvas
 
-        widgetShowAll menu        
+        widgetShowAll menu
 
   _ <- canvas `on` buttonReleaseEvent $ tryEvent $ do
          LeftButton <- eventButton
@@ -147,13 +148,13 @@ prepareMainWindow xml state = do
            (_,new_sks) <- runXS sks $ releaseElement mx my canvas
            widgetQueueDraw canvas
            return new_sks
-         
+
   _ <- canvas `on` motionNotifyEvent $ tryEvent $ do
          (mx,my) <- eventCoordinates
          liftIO . modifyMVar_ state $ \sks -> do
            (_,new_sks) <- runXS sks $ moveTo mx my canvas
            return new_sks
-  
+
   _ <- ktree `on` cursorChanged $ do
     iter <- getTreeIter ktree storeKernels
     case iter of
@@ -162,79 +163,92 @@ prepareMainWindow xml state = do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex val)
         return $ sks { selectedKernel = Just i }
     widgetQueueDraw canvas
-         
+
   _ <- ktree `on` buttonPressEvent $ tryEvent $ do
     LeftButton <- eventButton
     DoubleClick <- eventClick
     liftIO $ editKernel canvas state ktree storeKernels
-    
+
   btn_pfv <- xmlGetWidget xml castToToolButton "mtb_pf_view"
   _ <- onToolButtonClicked btn_pfv $ showPFPreviewWindow state
-  
+
   btn_pft <- xmlGetWidget xml castToToolButton "mtb_pf_test"
   _ <- onToolButtonClicked btn_pft $ do
     readMVar state >>= showTestProgramWindow . extractProgramFlow . skemaDoc
-  
+
   btn_new_kernel <- xmlGetWidget xml castToToolButton "ktb_new"
-  _ <- onToolButtonClicked btn_new_kernel $ do 
+  _ <- onToolButtonClicked btn_new_kernel $ do
     modifyMVar_ state $ \sks -> do
       (_,new_sks) <- runXS sks newKernel
       clearKernelList storeKernels new_sks
-    widgetQueueDraw canvas    
-  
+    widgetQueueDraw canvas
+
   btn_edit_kernel <- xmlGetWidget xml castToToolButton "ktb_edit"
-  _ <- onToolButtonClicked btn_edit_kernel 
+  _ <- onToolButtonClicked btn_edit_kernel
        $ editKernel canvas state ktree storeKernels
-  
+
   btn_del_kernel <- xmlGetWidget xml castToToolButton "ktb_delete"
   _ <- onToolButtonClicked btn_del_kernel $ do
     iter <- getTreeIter ktree storeKernels
-    when (isJust iter) $ do 
+    when (isJust iter) $ do
       modifyMVar_ state $ \sks -> do
         (i,_) <- listStoreGetValue storeKernels (listStoreIterToIndex . fromJust $ iter)
         (_,new_sks) <- runXS sks $ deleteKernel i
         clearKernelList storeKernels new_sks
       widgetQueueDraw canvas
-    
+
   window <- xmlGetWidget xml castToWindow "main"
-  
+
   -- Menu Items
   mi_open <- xmlGetWidget xml castToMenuItem "mi_open"
   _ <- mi_open `on` menuItemActivate $ do
     filename <- selectOpenFilename window
     when (isJust filename) $ do
       modifyMVar_ state $ \sks -> do
-        (ok, new_sks) <- runXS sks (openSkemaDoc $ fromJust filename) 
+        (ok, new_sks) <- runXS sks (openSkemaDoc $ fromJust filename)
         when ok (clearKernelList storeKernels new_sks >> return ())
         return new_sks
       widgetQueueDraw canvas
-      
+
   mi_save <- xmlGetWidget xml castToMenuItem "mi_save"
   _ <- mi_save `on` menuItemActivate $ do
-    oldname <- withMVar state $ \sks -> runXS sks (stateGet skemaDocFile) 
+    oldname <- withMVar state $ \sks -> runXS sks (stateGet skemaDocFile)
                                          >>= return . fst
     filename <- if isJust oldname
                 then return oldname
                 else selectSaveFilename window
+                     [("Skema Project","*.skema"), ("All","*.*")]
 
     when (isJust filename) $ do
-      modifyMVar_ state 
-        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename) 
+      modifyMVar_ state
+        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename)
                   >>= return . snd
-  
+
   mi_save_as <- xmlGetWidget xml castToMenuItem "mi_save_as"
   _ <- mi_save_as `on` menuItemActivate $ do
     filename <- selectSaveFilename window
+                [("Skema Project","*.skema"), ("All","*.*")]
+
 
     when (isJust filename) $ do
-      modifyMVar_ state 
-        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename) 
+      modifyMVar_ state
+        $ \sks -> runXS sks (saveSkemaDoc $ fromJust filename)
                   >>= return . snd
-  
+
+  mi_export_dot <- xmlGetWidget xml castToMenuItem "mi_export_dot"
+  _ <- mi_export_dot `on` menuItemActivate $ do
+    filename <- selectSaveFilename window
+                [("Graphviz Dot","*.dot"), ("All","*.*")]
+
+    when (isJust filename) $ do
+      withMVar state $ \sks -> do
+        _ <- runXS sks (saveDotFile $ fromJust filename)
+        return ()
+
   mi_quit <- xmlGetWidget xml castToMenuItem "mi_quit"
   _ <- mi_quit `on` menuItemActivate $ do
     mainQuit
-    
+
   return ()
 
 -- -----------------------------------------------------------------------------
@@ -242,19 +256,20 @@ getTreeIter :: TreeView -> ListStore a -> IO (Maybe TreeIter)
 getTreeIter tree store = (fmap fst $ treeViewGetCursor tree)
     >>= treeModelGetIter store
 
-editKernel :: DrawingArea -> MVar SkemaState -> TreeView -> ListStore (SDKernelID, Kernel) -> IO ()
+editKernel :: DrawingArea -> MVar SkemaState -> TreeView 
+              -> ListStore (SDKernelID, Kernel) -> IO ()
 editKernel canvas state tree kernels = do
   iter <- getTreeIter tree kernels
   when (isJust iter) $ do
     (i,k) <- listStoreGetValue kernels (listStoreIterToIndex . fromJust $ iter)
-    usedNames <- withMVar state 
+    usedNames <- withMVar state
                  $ return . filter (/= name k) . map name . MI.elems . library . skemaDoc
     newk <- showNodeCLWindow k usedNames
-    when (newk /= k) $ do 
+    when (newk /= k) $ do
       modifyMVar_ state $ \sks -> do
         (_,new_sks) <- runXS sks $ updateKernel i newk
         clearKernelList kernels new_sks
-      widgetQueueDraw canvas    
+      widgetQueueDraw canvas
 
 -- -----------------------------------------------------------------------------
 setupKernelsView :: TreeView -> ListStore (SDKernelID,Kernel) -> IO ()
@@ -268,31 +283,33 @@ setupKernelsView view model = do
   treeViewColumnPackStart col1 renderer1 True
   cellLayoutSetAttributes col1 renderer1 model $ \(_,r) -> [ cellText := name r ]
   _ <- treeViewAppendColumn view col1
-  
+
   col2 <- treeViewColumnNew
   renderer2 <- cellRendererTextNew
   treeViewColumnSetTitle col2 "In"
   treeViewColumnPackStart col2 renderer2 True
-  cellLayoutSetAttributes col2 renderer2 model $ \(_,r) -> [ 
-    cellText := show . length . filter ((==InputPoint) . iopType) . MI.elems $ iopoints r ]
+  cellLayoutSetAttributes col2 renderer2 model $ \(_,r) -> [
+    cellText := show . length . filter ((==InputPoint) . iopType) . MI.elems 
+    $ iopoints r ]
   _ <- treeViewAppendColumn view col2
 
   col3 <- treeViewColumnNew
   renderer3 <- cellRendererTextNew
   treeViewColumnSetTitle col3 "Out"
   treeViewColumnPackStart col3 renderer3 True
-  cellLayoutSetAttributes col3 renderer3 model $ \(_,r) -> [ 
-    cellText := show . length . filter ((==OutputPoint) . iopType) . MI.elems $ iopoints r ]
+  cellLayoutSetAttributes col3 renderer3 model $ \(_,r) -> [
+    cellText := show . length . filter ((==OutputPoint) . iopType) . MI.elems 
+    $ iopoints r ]
   _ <- treeViewAppendColumn view col3
 
   col4 <- treeViewColumnNew
   renderer4 <- cellRendererTextNew
   treeViewColumnSetTitle col4 "Cbuf"
   treeViewColumnPackStart col4 renderer4 True
-  cellLayoutSetAttributes col4 renderer4 model $ \(_,r) -> [ 
+  cellLayoutSetAttributes col4 renderer4 model $ \(_,r) -> [
     cellText := show . M.size $ constBuffers r ]
   _ <- treeViewAppendColumn view col4
-  
+
   return ()
 
 clearKernelList :: ListStore (SDKernelID,Kernel) -> SkemaState -> IO SkemaState
@@ -316,7 +333,7 @@ selectElement mx my = do
       let marrow = findInputArrow stDoc selNode selPoint
       when (isJust marrow) (statePutSkemaDoc (deleteArrow stDoc (fromJust marrow)))
 
-insertElement :: SDKernelID -> Double -> Double -> DrawingArea 
+insertElement :: SDKernelID -> Double -> Double -> DrawingArea
                  -> XS (Maybe SDNodeID)
 insertElement idx mx my canvas = do
   selElement <- stateSelectElement (Pos2D (mx,my))
@@ -333,7 +350,7 @@ insertNewNode idx x y = do
   let keys = MI.keys.nodes $ oldDoc
       last_i = if null keys then 0 else maximum keys + 1
       new_node = NodeKernel (Pos2D (x,y)) idx
-  statePutSkemaDoc $ oldDoc { 
+  statePutSkemaDoc $ oldDoc {
                          nodes = MI.insert last_i new_node $ nodes oldDoc}
 
 showElementMenu :: SelectedElement -> XS (Maybe SDNodeID)
@@ -383,9 +400,9 @@ drawCanvas canvas = do
   selKernel <- stateGet selectedKernel
   (w,h) <- io $ drawableGetSize drawable
   io . renderWithDrawable canvas $ drawSkemaDoc
-                                  (fromIntegral w) (fromIntegral h) 
+                                  (fromIntegral w) (fromIntegral h)
                                   stDoc selKernel
-     
+
   stElem <- stateGet selectedElem
   (Pos2D (ox,oy)) <- stateGet selectedPos
   (Pos2D (mx,my)) <- stateGet selectedPos2
@@ -396,7 +413,7 @@ drawCanvas canvas = do
 
 -- -----------------------------------------------------------------------------
 newKernel :: XS ()
-newKernel = do 
+newKernel = do
   oldDoc <- stateGet skemaDoc
   let krnl = minimalKernel $ library oldDoc
       newDoc = skemaDocInsertKernel oldDoc krnl
@@ -418,60 +435,59 @@ deleteNode idx = do
   statePutSkemaDoc $ skemaDocDeleteNode oldDoc idx
 
 -- -----------------------------------------------------------------------------
-setupFilters :: FileChooserDialog -> IO ()
-setupFilters dialog = forM_ filters $ \(n,f) -> do
+setupFilters :: FileChooserDialog -> [(String,String)] -> IO ()
+setupFilters dialog filters = forM_ filters $ \(n,f) -> do
   fileFilter <- fileFilterNew
   fileFilterAddPattern fileFilter f
   fileFilterSetName fileFilter $ concat [n," (",f,")"]
   fileChooserAddFilter dialog fileFilter
-    where
-      filters = [("Skema Project","*.skema"), ("All","*.*")]
 
 selectOpenFilename :: Window -> IO (Maybe FilePath)
 selectOpenFilename window = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
              FileChooserActionOpen
              [(stockCancel,ResponseNo),(stockOpen,ResponseYes)]
-  setupFilters chooser
+  setupFilters chooser [("Skema Project","*.skema"), ("All","*.*")]
+
   resp <- dialogRun chooser
-  
+
   fileName <- fileChooserGetFilename chooser
-    
+
   widgetDestroy chooser
-    
+
   case resp of
     ResponseYes -> return fileName
     _ -> return Nothing
 
-selectSaveFilename :: Window -> IO (Maybe FilePath)
-selectSaveFilename window = do
+selectSaveFilename :: Window -> [(String,String)] -> IO (Maybe FilePath)
+selectSaveFilename window filters = do
   chooser <- fileChooserDialogNew Nothing (Just . toWindow $ window)
              FileChooserActionSave
              [(stockCancel,ResponseNo),(stockSave,ResponseYes)]
-  setupFilters chooser
+  setupFilters chooser filters
   fileChooserSetDoOverwriteConfirmation chooser True
   resp <- dialogRun chooser
-  
+
   fileName <- fileChooserGetFilename chooser
-    
+
   widgetDestroy chooser
-    
+
   case resp of
     ResponseYes -> return fileName
     _ -> return Nothing
 
 openSkemaDoc :: FilePath -> XS Bool
 openSkemaDoc filename = do
-  filedat <- io $ catch 
+  filedat <- io $ catch
     (fmap Just $ readFile filename)
     (\_ -> return Nothing)
-    
+
   case filedat of
     Nothing -> return False
     Just json -> case fromJSONString json of
       Nothing -> return False
       Just doc -> do
-        statePutSkemaDoc doc 
+        statePutSkemaDoc doc
         statePutSkemaDocFilename $ Just filename
         return True
 
@@ -479,6 +495,11 @@ saveSkemaDoc :: FilePath -> XS ()
 saveSkemaDoc filename = do
   jsonData <- fmap toJSONString $ stateGet skemaDoc
   io $ writeFile filename jsonData
-  statePutSkemaDocFilename $ Just filename  
+  statePutSkemaDocFilename $ Just filename
+
+saveDotFile :: FilePath -> XS ()
+saveDotFile filename = do
+  dotData <- fmap (toGraphvizDot . extractProgramFlow) $ stateGet skemaDoc
+  io $ writeFile filename dotData
 
 -- -----------------------------------------------------------------------------
