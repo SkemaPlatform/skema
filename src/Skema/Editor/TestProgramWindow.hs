@@ -23,7 +23,7 @@ import Data.Int( Int8, Int16, Int32, Int64 )
 import Data.Word( Word8, Word16, Word32, Word64 )
 import Data.Maybe( isJust, fromJust )
 import Graphics.UI.Gtk( 
-  widgetShowAll, widgetDestroy, widgetSetSensitivity )
+  get, widgetShowAll, widgetDestroy, widgetSetSensitivity )
 import Graphics.UI.Gtk.Glade( xmlNew, xmlGetWidget )
 import Graphics.UI.Gtk.Abstract.Box( BoxClass, Packing(..), boxPackStart )
 import Graphics.UI.Gtk.Display.Label( labelNew )
@@ -36,6 +36,7 @@ import Graphics.UI.Gtk.Scrolling.ScrolledWindow(
   castToScrolledWindow, scrolledWindowAddWithViewport )
 import Graphics.UI.Gtk.Buttons.Button( castToButton, buttonActivated )
 import Graphics.UI.Gtk.General.StockItems( stockOk )
+import Graphics.UI.Gtk.Entry.Entry( castToEntry, entryText )
 import Graphics.UI.Gtk.Entry.SpinButton( 
   SpinButton, spinButtonNew, spinButtonGetValue, afterInput, 
   spinButtonSetValue )
@@ -52,6 +53,12 @@ import Skema.DataValue(
   convertToDataValues )
 import Skema.RunProtocol( ServerPort(..), runBuffers )
 
+-- -----------------------------------------------------------------------------
+readMaybe :: String -> Maybe Int
+readMaybe s = case reads s of
+              [(x, "")] -> Just x
+              _ -> Nothing
+              
 -- -----------------------------------------------------------------------------
 showTestProgramWindow :: ProgramFlow -> IO ()
 showTestProgramWindow pf = do
@@ -73,19 +80,28 @@ showTestProgramWindow pf = do
              (liftM (map snd) . createIOControl vbox_out)
   scrolledWindowAddWithViewport sw_out vbox_out  
   
+  sname_edit <- xmlGetWidget xml castToEntry "server_name"
+  sport_edit <- xmlGetWidget xml castToEntry "server_port"
+
   btn_run <- xmlGetWidget xml castToButton "btn_run"
   _ <- btn_run `on` buttonActivated $ do
-    ins <- forM invals $ liftM valuesToByteString . mapM readMVar
-    outs <- runBuffers ins (ServerPort "tesla01.ifca.es" 8080) pf
-    when (isJust outs) 
-      (do
-          let dvals = map (uncurry convertToDataValues) 
-                      (zip 
-                       (fromJust outs)
-                       (map iopDataType $ unasignedOutputPoints pf))
-          forM_ (zip outents dvals) $ \(entries,vals) -> do
-            forM_ (zip entries vals) (uncurry putOnSpin)
-      )
+    serverName <- get sname_edit entryText
+    serverPort <- get sport_edit entryText
+    
+    case readMaybe serverPort of
+      Nothing -> putStrLn "Invalid Port"
+      Just pp -> do
+        ins <- forM invals $ liftM valuesToByteString . mapM readMVar
+        outs <- runBuffers ins (ServerPort serverName pp) pf
+        when (isJust outs) 
+          (do
+              let dvals = map (uncurry convertToDataValues) 
+                          (zip 
+                           (fromJust outs)
+                           (map iopDataType $ unasignedOutputPoints pf))
+              forM_ (zip outents dvals) $ \(entries,vals) -> do
+                forM_ (zip entries vals) (uncurry putOnSpin)
+          )
     
   -- buttons
   okButton <- dialogAddButton window stockOk ResponseAccept
